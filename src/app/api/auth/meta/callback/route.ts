@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser, verifyOAuthState } from "@/lib/auth";
 import {
   exchangeCodeForToken,
   graphVersion,
@@ -8,18 +9,78 @@ import {
 
 export const dynamic = "force-dynamic";
 
+async function upsertOwnedAccount(
+  userId: string,
+  data: {
+    platform: "facebook" | "instagram";
+    name: string;
+    handle: string | null;
+    externalId: string;
+    accessToken: string;
+    avatarUrl?: string | null;
+  }
+) {
+  const existing = await prisma.account.findFirst({
+    where: {
+      userId,
+      platform: data.platform,
+      externalId: data.externalId,
+    },
+  });
+  if (existing) {
+    await prisma.account.update({
+      where: { id: existing.id },
+      data: {
+        accessToken: data.accessToken,
+        name: data.name,
+        handle: data.handle,
+        avatarUrl: data.avatarUrl ?? existing.avatarUrl,
+        sandbox: false,
+      },
+    });
+    return;
+  }
+  await prisma.account.create({
+    data: {
+      userId,
+      platform: data.platform,
+      name: data.name,
+      handle: data.handle,
+      externalId: data.externalId,
+      accessToken: data.accessToken,
+      avatarUrl: data.avatarUrl ?? null,
+      sandbox: false,
+    },
+  });
+}
+
 // Handles the Meta OAuth redirect: exchanges the code, then discovers the
 // user's Facebook Pages and their linked Instagram business accounts.
 export async function GET(req: NextRequest) {
+  const user = await getCurrentUser(req);
+  if (!user) {
+    return NextResponse.redirect(new URL("/login?next=/accounts", req.url));
+  }
   if (!metaConfigured()) {
-    return NextResponse.redirect(new URL("/accounts?error=meta_not_configured", req.url));
+    return NextResponse.redirect(
+      new URL("/accounts?error=meta_not_configured", req.url)
+    );
   }
   const code = req.nextUrl.searchParams.get("code");
+  const state = req.nextUrl.searchParams.get("state");
   if (!code) {
-    return NextResponse.redirect(new URL("/accounts?error=missing_code", req.url));
+    return NextResponse.redirect(
+      new URL("/accounts?error=missing_code", req.url)
+    );
+  }
+  if (!verifyOAuthState(req, state)) {
+    return NextResponse.redirect(
+      new URL("/accounts?error=invalid_state", req.url)
+    );
   }
 
-  const base = process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
+  const base =
+    process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
   const redirectUri = `${base}/api/auth/meta/callback`;
 
   try {
@@ -46,36 +107,24 @@ export async function GET(req: NextRequest) {
 
     let connected = 0;
     for (const page of pagesJson.data ?? []) {
-      await prisma.account.upsert({
-        where: { id: `fb-${page.id}` },
-        update: { accessToken: page.access_token, name: page.name },
-        create: {
-          id: `fb-${page.id}`,
-          platform: "facebook",
-          name: page.name,
-          handle: page.name,
-          externalId: page.id,
-          accessToken: page.access_token,
-          sandbox: false,
-        },
+      await upsertOwnedAccount(user.id, {
+        platform: "facebook",
+        name: page.name,
+        handle: page.name,
+        externalId: page.id,
+        accessToken: page.access_token,
       });
       connected++;
 
       if (page.instagram_business_account) {
         const ig = page.instagram_business_account;
-        await prisma.account.upsert({
-          where: { id: `ig-${ig.id}` },
-          update: { accessToken: page.access_token },
-          create: {
-            id: `ig-${ig.id}`,
-            platform: "instagram",
-            name: ig.username || page.name,
-            handle: ig.username ? `@${ig.username}` : null,
-            externalId: ig.id,
-            accessToken: page.access_token,
-            avatarUrl: ig.profile_picture_url || null,
-            sandbox: false,
-          },
+        await upsertOwnedAccount(user.id, {
+          platform: "instagram",
+          name: ig.username || page.name,
+          handle: ig.username ? `@${ig.username}` : null,
+          externalId: ig.id,
+          accessToken: page.access_token,
+          avatarUrl: ig.profile_picture_url || null,
         });
         connected++;
       }

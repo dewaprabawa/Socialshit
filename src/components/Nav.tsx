@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -10,8 +11,34 @@ const links = [
   { href: "/accounts", label: "Accounts" },
 ];
 
+interface Me {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  provider: string;
+  sandbox: boolean;
+}
+
 export function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [me, setMe] = useState<Me | null | undefined>(undefined);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => setMe(d.user || null))
+      .catch(() => setMe(null));
+  }, [pathname]);
+
+  if (pathname === "/login") return null;
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -40,6 +67,35 @@ export function Nav() {
             );
           })}
         </nav>
+        <div className="flex items-center gap-2">
+          {me ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={
+                  me.avatarUrl ||
+                  `https://api.dicebear.com/9.x/identicon/svg?seed=${me.id}`
+                }
+                alt=""
+                className="h-8 w-8 rounded-full bg-white/10 object-cover"
+              />
+              <div className="hidden sm:block">
+                <div className="text-sm font-medium leading-tight">{me.name}</div>
+                <div className="text-[11px] capitalize text-slate-400">
+                  {me.provider}
+                  {me.sandbox ? " · sandbox" : ""}
+                </div>
+              </div>
+              <button onClick={logout} className="btn-ghost px-3 py-1.5 text-xs">
+                Log out
+              </button>
+            </>
+          ) : (
+            <Link href="/login" className="btn-primary px-3 py-1.5 text-xs">
+              Log in
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

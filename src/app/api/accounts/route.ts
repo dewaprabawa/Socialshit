@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
   const accounts = await prisma.account.findMany({
+    where: { userId: auth.user.id },
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { posts: true } } },
   });
@@ -12,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
   const body = await req.json().catch(() => ({}));
   const { platform, name, handle, externalId, accessToken, avatarUrl } = body;
 
@@ -43,6 +51,7 @@ export async function POST(req: NextRequest) {
 
   const account = await prisma.account.create({
     data: {
+      userId: auth.user.id,
       platform,
       name,
       handle: handle || null,

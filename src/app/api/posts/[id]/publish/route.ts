@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 import { publishPost, type Platform } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const post = await prisma.post.findUnique({
-    where: { id: params.id },
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
+  const post = await prisma.post.findFirst({
+    where: { id: params.id, account: { userId: auth.user.id } },
     include: { account: true },
   });
   if (!post) {

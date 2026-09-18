@@ -130,23 +130,154 @@ export async function publishPost(input: PublishInput): Promise<PublishResult> {
 
 // --- OAuth helpers (used when real Meta credentials are configured) ---
 
+function facebookDialogUrl(
+  redirectUri: string,
+  state: string,
+  scopes: string[]
+): string {
+  const params = new URLSearchParams({
+    client_id: process.env.META_APP_ID || "",
+    redirect_uri: redirectUri,
+    state,
+    scope: scopes.join(","),
+    response_type: "code",
+  });
+  return `https://www.facebook.com/${graphVersion()}/dialog/oauth?${params}`;
+}
+
+// Facebook Login — identity only (public profile + email).
+export function facebookLoginUrl(redirectUri: string, state: string): string {
+  return facebookDialogUrl(redirectUri, state, ["public_profile", "email"]);
+}
+
+// Instagram Login (Instagram API with Instagram Login).
+export function instagramLoginUrl(redirectUri: string, state: string): string {
+  const params = new URLSearchParams({
+    client_id: process.env.META_APP_ID || "",
+    redirect_uri: redirectUri,
+    state,
+    scope: [
+      "instagram_business_basic",
+      "instagram_business_content_publish",
+    ].join(","),
+    response_type: "code",
+  });
+  return `https://www.instagram.com/oauth/authorize?${params}`;
+}
+
+// Connect Facebook Pages + linked IG Business accounts for publishing.
 export function oauthLoginUrl(redirectUri: string, state: string): string {
-  const scopes = [
+  return facebookDialogUrl(redirectUri, state, [
     "pages_show_list",
     "pages_read_engagement",
     "pages_manage_posts",
     "instagram_basic",
     "instagram_content_publish",
     "business_management",
-  ].join(",");
+  ]);
+}
+
+export interface SocialProfile {
+  id: string;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+}
+
+export async function fetchFacebookProfile(
+  accessToken: string
+): Promise<SocialProfile> {
   const params = new URLSearchParams({
-    client_id: process.env.META_APP_ID || "",
-    redirect_uri: redirectUri,
-    state,
-    scope: scopes,
-    response_type: "code",
+    fields: "id,name,email,picture.type(large)",
+    access_token: accessToken,
   });
-  return `https://www.facebook.com/${graphVersion()}/dialog/oauth?${params}`;
+  const res = await fetch(graphUrl(`me?${params.toString()}`));
+  const json = (await res.json()) as {
+    id?: string;
+    name?: string;
+    email?: string;
+    picture?: { data?: { url?: string } };
+    error?: { message?: string };
+  };
+  if (!res.ok || !json.id) {
+    throw new Error(json.error?.message || "Failed to load Facebook profile");
+  }
+  return {
+    id: json.id,
+    name: json.name || "Facebook user",
+    email: json.email || null,
+    avatarUrl: json.picture?.data?.url || null,
+  };
+}
+
+export async function exchangeInstagramCodeForToken(
+  code: string,
+  redirectUri: string
+): Promise<{ accessToken: string; userId: string }> {
+  const body = new URLSearchParams({
+    client_id: process.env.META_APP_ID || "",
+    client_secret: process.env.META_APP_SECRET || "",
+    grant_type: "authorization_code",
+    redirect_uri: redirectUri,
+    code,
+  });
+  const res = await fetch("https://api.instagram.com/oauth/access_token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const json = (await res.json()) as {
+    access_token?: string;
+    user_id?: string | number;
+    data?: Array<{ access_token?: string; user_id?: string | number }>;
+    error_message?: string;
+    error?: { message?: string };
+  };
+  const row = json.data?.[0];
+  const accessToken = json.access_token || row?.access_token;
+  const userId = String(json.user_id || row?.user_id || "");
+  if (!res.ok || !accessToken) {
+    throw new Error(
+      json.error?.message ||
+        json.error_message ||
+        "Failed to exchange Instagram code"
+    );
+  }
+  return { accessToken, userId };
+}
+
+export async function fetchInstagramProfile(
+  accessToken: string
+): Promise<SocialProfile> {
+  const params = new URLSearchParams({
+    fields: "user_id,username,name,profile_picture_url",
+    access_token: accessToken,
+  });
+  const res = await fetch(
+    `https://graph.instagram.com/${graphVersion()}/me?${params.toString()}`
+  );
+  const json = (await res.json()) as {
+    user_id?: string;
+    id?: string;
+    username?: string;
+    name?: string;
+    profile_picture_url?: string;
+    error?: { message?: string };
+  };
+  if (!res.ok) {
+    throw new Error(json.error?.message || "Failed to load Instagram profile");
+  }
+  const id = String(json.user_id || json.id || "");
+  if (!id) {
+    throw new Error("Instagram profile did not include a user id");
+  }
+  const username = json.username ? `@${json.username}` : "Instagram user";
+  return {
+    id,
+    name: json.name || username,
+    email: null,
+    avatarUrl: json.profile_picture_url || null,
+  };
 }
 
 export async function exchangeCodeForToken(
