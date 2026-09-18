@@ -48,7 +48,7 @@ function oauthSigningSecret(): string {
 
 export function toAuthUser(input: {
   id?: string;
-  provider: "facebook" | "instagram";
+  provider: string;
   providerUserId: string;
   name: string;
   email?: string | null;
