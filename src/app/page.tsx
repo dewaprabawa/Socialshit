@@ -75,8 +75,8 @@ export default async function DashboardPage() {
         <p className="mt-2 max-w-2xl text-slate-400">
           Signed in as {user.name} with {user.provider}
           {user.sandbox ? " (sandbox)" : ""}. Generate content and captions with
-          AI, connect your Instagram Business and Facebook Page, then publish
-          now or schedule for later.
+          AI, connect Instagram via Instagram Login or a Facebook Page, then
+          publish now or schedule for later.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/studio" className="btn-primary">

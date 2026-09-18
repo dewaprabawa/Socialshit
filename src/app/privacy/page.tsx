@@ -279,7 +279,9 @@ export default function PrivacyPage() {
       <Section id="meta-platform" title="5. Facebook and Instagram platform">
         <p>
           Socialshit is an independent app that uses Facebook Login, Instagram
-          Login, and the Graph API. It is not affiliated with Meta beyond those
+          API with Instagram Login, and the Graph API. Instagram publishing
+          through Instagram Login does not require a Facebook Page or a Meta
+          Business portfolio. Socialshit is not affiliated with Meta beyond those
           APIs.
         </p>
         <p>Permissions this instance may request:</p>

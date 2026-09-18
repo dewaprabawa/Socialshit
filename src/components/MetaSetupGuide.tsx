@@ -54,9 +54,6 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const appBase = metaAppId
     ? `https://developers.facebook.com/apps/${metaAppId}`
     : "https://developers.facebook.com/apps";
-  const permissionsUrl = metaAppId
-    ? `${appBase}/app-review/permissions/`
-    : "https://developers.facebook.com/apps/";
   const loginBusinessUrl = metaAppId
     ? `${appBase}/fb-login-business/configurations/`
     : "https://developers.facebook.com/docs/facebook-login/facebook-login-for-business/";
@@ -72,51 +69,32 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
         </h2>
         <p className="mt-1 text-slate-400">
           {metaReady
-            ? "App ID and secret are loaded. This is a Business app, so Facebook Login must request at least one permission besides public_profile (pages_show_list). Connecting Pages needs Facebook Login for Business or those publishing permissions."
+            ? "App ID and secret are loaded. Sign in with personal Facebook Login. Publish Instagram with Instagram API with Instagram Login — Meta’s business API that does not need Business Manager."
             : "Do this once so Continue with Facebook and Continue with Instagram use your real Meta app instead of sandbox login."}
         </p>
       </div>
 
       {metaReady && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-amber-100">
-          <p className="font-medium text-amber-50">
-            “Tampaknya aplikasi ini tidak tersedia / membutuhkan setidaknya satu
-            supported permission”
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-3 text-emerald-100">
+          <p className="font-medium text-emerald-50">
+            Recommended business API: Instagram API with Instagram Login
           </p>
-          <p className="mt-1 text-xs text-amber-100/90">
-            Facebook Login for Business will not open with public_profile alone.
-            Socialshit now requests <code className="text-white">pages_show_list</code>{" "}
-            as well. You still have to add that permission on the Meta app.
+          <p className="mt-1 text-xs text-emerald-100/90">
+            This is Meta&apos;s Instagram publishing API. It uses{" "}
+            <code className="text-white">instagram.com/oauth</code> and{" "}
+            <code className="text-white">graph.instagram.com</code>. It does{" "}
+            <span className="text-white">not</span> use Facebook Login for
+            Business, a Facebook Page, or Business Manager.
           </p>
-          <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-amber-100/90">
+          <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-emerald-100/90">
             <li>
-              Open{" "}
-              <a
-                className="text-white underline"
-                href={appBase}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Use cases
-              </a>{" "}
-              → Authentication and Account Creation → Customize, and add{" "}
-              <span className="text-white">pages_show_list</span>.
+              In the Meta app add the <span className="text-white">Instagram</span>{" "}
+              product → <span className="text-white">API setup with Instagram
+              login</span>. Paste the Instagram callback URI below.
             </li>
             <li>
-              Or create a{" "}
-              <a
-                className="text-white underline"
-                href={loginBusinessUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Facebook Login for Business configuration
-              </a>{" "}
-              (User access token) that includes pages_show_list, then set{" "}
-              <code className="text-white">META_LOGIN_CONFIG_ID</code> and Redeploy.
-            </li>
-            <li>
-              Add yourself under{" "}
+              Add your Instagram username as an Instagram tester, and add the
+              same person under{" "}
               <a
                 className="text-white underline"
                 href={rolesUrl}
@@ -124,23 +102,49 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
                 rel="noreferrer"
               >
                 App roles
-              </a>{" "}
-              if Facebook still says the app cannot be accessed.
+              </a>
+              .
+            </li>
+            <li>
+              Convert the Instagram account to{" "}
+              <span className="text-white">Professional</span> (Business or
+              Creator) in the Instagram app.
+            </li>
+            <li>
+              Click <span className="text-white">Continue with Instagram</span>,
+              or Accounts → Add integration → Instagram → Connect with Meta.
             </li>
           </ol>
         </div>
       )}
 
-      {metaReady && !metaLoginConfig && (
+      {metaReady && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-amber-100">
           <p className="font-medium text-amber-50">
-            Invalid Scopes on Connect with Meta
+            Personal Facebook Login (sign-in only)
           </p>
           <p className="mt-1 text-xs text-amber-100/90">
-            After login works, Connect Pages still needs Facebook Login for
-            Business. Add that product, create a User access token configuration,
-            then paste the Config ID as{" "}
-            <code className="text-white">META_LOGIN_CONFIG_ID</code>.
+            Continue with Facebook requests only{" "}
+            <code className="text-white">public_profile</code>. Add{" "}
+            <span className="text-white">Facebook Login</span> (Use cases →
+            Authentication and Account Creation), not Facebook Login for
+            Business. A Business portfolio is not required to sign in.
+          </p>
+        </div>
+      )}
+
+      {metaReady && !metaLoginConfig && (
+        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-slate-300">
+          <p className="font-medium text-white">
+            Optional: Facebook Pages (separate API)
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Skip this unless you want to publish to a Facebook Page. That path
+            uses Graph API Page tokens or Facebook Login for Business, and
+            needs a Page you admin. Prefer Instagram Login for publishing
+            without Business Manager. If you later add Login for Business,
+            paste the Config ID as{" "}
+            <code className="text-slate-200">META_LOGIN_CONFIG_ID</code>.
           </p>
         </div>
       )}
@@ -193,8 +197,18 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
 
       <ol className="list-decimal space-y-3 pl-5 text-slate-300" start={4}>
         <li>
-          <span className="text-white">Connect Pages — Facebook Login for Business.</span>{" "}
-          Open{" "}
+          <span className="text-white">Instagram API with Instagram Login</span>{" "}
+          (the business publishing API). Add the{" "}
+          <span className="text-white">Instagram</span> product →{" "}
+          <span className="text-white">API setup with Instagram login</span>.
+          Paste the Instagram callback URI. Add your IG username as a tester.
+          Convert the account to Professional (Business or Creator). Scopes:{" "}
+          <code className="text-slate-200">instagram_business_basic</code>,{" "}
+          <code className="text-slate-200">instagram_business_content_publish</code>.
+          No Facebook Page and no Business Manager.
+        </li>
+        <li>
+          Optional — Facebook Pages only. Open{" "}
           <a
             className="text-brand-400 hover:underline"
             href={loginBusinessUrl}
@@ -202,40 +216,26 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
             rel="noreferrer"
           >
             Facebook Login for Business → Configurations
+          </a>{" "}
+          if you already have a Business portfolio and a Page. Create a User
+          access token configuration with{" "}
+          <code className="text-slate-200">pages_show_list</code>,{" "}
+          <code className="text-slate-200">pages_read_engagement</code>,{" "}
+          <code className="text-slate-200">pages_manage_posts</code>,{" "}
+          <code className="text-slate-200">instagram_basic</code>,{" "}
+          <code className="text-slate-200">instagram_content_publish</code>,{" "}
+          <code className="text-slate-200">business_management</code>, then set{" "}
+          <code className="text-slate-200">META_LOGIN_CONFIG_ID</code>. Skip this
+          for Instagram Login. You can also paste a Page access token from{" "}
+          <a
+            className="text-brand-400 hover:underline"
+            href="https://developers.facebook.com/tools/explorer/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Graph API Explorer
           </a>
-          . Create a configuration:
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-400">
-            <li>Access token type: <span className="text-white">User access token</span></li>
-            <li>
-              Permissions: <code className="text-slate-200">pages_show_list</code>,{" "}
-              <code className="text-slate-200">pages_read_engagement</code>,{" "}
-              <code className="text-slate-200">pages_manage_posts</code>,{" "}
-              <code className="text-slate-200">instagram_basic</code>,{" "}
-              <code className="text-slate-200">instagram_content_publish</code>,{" "}
-              <code className="text-slate-200">business_management</code>
-            </li>
-            <li>Copy the <span className="text-white">Config ID</span></li>
-          </ul>
-          <pre className="mt-2 overflow-x-auto rounded-lg border border-white/10 bg-slate-950 p-3 text-xs text-slate-200">{`META_LOGIN_CONFIG_ID=your_config_id`}</pre>
-          <p className="mt-2 text-xs text-slate-400">
-            Alternative if you stay on consumer Facebook Login:{" "}
-            <a
-              className="text-brand-400 hover:underline"
-              href={permissionsUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              App Review → Permissions and Features
-            </a>{" "}
-            and add the same permissions. In Development, Admins/Developers/Testers
-            can grant them without submitting App Review.
-          </p>
-        </li>
-        <li>
-          For Instagram Login, add the <span className="text-white">Instagram</span> product and
-          open <span className="text-white">API setup with Instagram login</span>. Add the same
-          Instagram callback URI there. Your IG account must be a{" "}
-          <span className="text-white">Professional</span> (Business or Creator) account.
+          .
         </li>
         <li>
           In <span className="text-white">App settings → Basic</span>, copy{" "}
@@ -243,8 +243,12 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
           Secret</span>. Put them in the app environment (never in frontend code):
           <pre className="mt-2 overflow-x-auto rounded-lg border border-white/10 bg-slate-950 p-3 text-xs text-slate-200">{`META_APP_ID=your_app_id
 META_APP_SECRET=your_app_secret
-META_LOGIN_CONFIG_ID=your_config_id
 APP_BASE_URL=${origin}`}</pre>
+          <p className="mt-2 text-xs text-slate-400">
+            <code className="text-slate-200">META_LOGIN_CONFIG_ID</code> is only
+            for Facebook Pages via Login for Business. Leave it unset for
+            Instagram Login.
+          </p>
         </li>
         <li>
           Local: add those lines to <code className="text-slate-200">.env</code> and restart{" "}
@@ -259,13 +263,14 @@ APP_BASE_URL=${origin}`}</pre>
         <li>
           While the Meta app is in <span className="text-white">Development</span> mode, only
           Admins, Developers, and Testers can log in. Add yourself under{" "}
-          <span className="text-white">App roles</span>.
+          <span className="text-white">App roles</span>. For Instagram Login also
+          add the Instagram username as an Instagram tester.
         </li>
         <li>
-          Reload this page. The sandbox note should disappear. Click{" "}
-          <span className="text-white">Continue with Facebook</span>. After login, use{" "}
-          <span className="text-white">Accounts → Add integration → Connect with Meta</span> to
-          attach Pages and linked Instagram Business accounts for publishing.
+          Reload this page. Click{" "}
+          <span className="text-white">Continue with Instagram</span> to sign in
+          and attach a publishing account, or sign in with Facebook then{" "}
+          <span className="text-white">Accounts → Instagram → Connect with Meta</span>.
         </li>
         <li>
           Before switching the Meta app to <span className="text-white">Live</span>, paste the

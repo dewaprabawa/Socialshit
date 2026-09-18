@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   applyOAuthStateCookie,
+  getCurrentUser,
   oauthBaseUrl,
   safeNextPath,
   sandboxLogin,
@@ -14,7 +15,10 @@ export async function GET(req: NextRequest) {
   const next = safeNextPath(req.nextUrl.searchParams.get("next"));
   try {
     if (metaConfigured()) {
-      const state = signOAuthState(next);
+      const user = await getCurrentUser(req);
+      const flow = user ? "ig" : "login";
+      const dest = user ? "/accounts" : next;
+      const state = signOAuthState(dest, flow);
       const redirectUri = `${oauthBaseUrl(req)}/api/auth/instagram/callback`;
       const res = NextResponse.redirect(instagramLoginUrl(redirectUri, state));
       applyOAuthStateCookie(res, state);

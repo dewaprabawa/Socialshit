@@ -122,7 +122,7 @@ export function readEphemeralUser(token: string | undefined): AuthUser | null {
 
 export function signOAuthState(
   nextPath: string,
-  flow: "login" | "pages" = "login"
+  flow: "login" | "pages" | "ig" = "login"
 ): string {
   const payload = Buffer.from(
     JSON.stringify({
@@ -141,7 +141,7 @@ export function signOAuthState(
 
 export function readOAuthState(state: string | null): {
   next: string;
-  flow: "login" | "pages";
+  flow: "login" | "pages" | "ig";
 } | null {
   if (!state) return null;
   const i = state.lastIndexOf(".");
@@ -164,7 +164,7 @@ export function readOAuthState(state: string | null): {
     if (!data.t || Date.now() - data.t > 10 * 60 * 1000) return null;
     return {
       next: safeNextPath(data.n),
-      flow: data.f === "pages" ? "pages" : "login",
+      flow: data.f === "pages" ? "pages" : data.f === "ig" ? "ig" : "login",
     };
   } catch {
     return null;

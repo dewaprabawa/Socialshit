@@ -105,7 +105,8 @@ export default function AccountsPage() {
         <div>
           <h1 className="text-2xl font-bold">Accounts</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Connect your Instagram Business account and Facebook Page.
+            Connect Instagram with Instagram Login (business API, no Business
+            Manager) or a Facebook Page you admin.
           </p>
         </div>
         <button

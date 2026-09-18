@@ -23,20 +23,56 @@ export interface PublishResult {
   sandbox: boolean;
 }
 
-function graphUrl(path: string): string {
-  return `https://graph.facebook.com/${graphVersion()}/${path}`;
+export type GraphHost = "facebook" | "instagram";
+
+function graphBase(host: GraphHost): string {
+  return host === "instagram"
+    ? "https://graph.instagram.com"
+    : "https://graph.facebook.com";
+}
+
+function graphUrl(path: string, host: GraphHost = "facebook"): string {
+  return `${graphBase(host)}/${graphVersion()}/${path}`;
+}
+
+function graphErrorMessage(
+  json: Record<string, unknown>,
+  status: number
+): string {
+  const err = json.error as { message?: string } | undefined;
+  return err?.message || `Graph API error (${status})`;
+}
+
+function isWrongGraphHostError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("oauth") ||
+    lower.includes("access token") ||
+    lower.includes("invalid platform") ||
+    lower.includes("cannot parse access token") ||
+    lower.includes("does not exist") ||
+    lower.includes("unsupported get request") ||
+    lower.includes("unsupported post request")
+  );
+}
+
+/** Instagram Login tokens usually start with IG; Page tokens usually start with EAA. */
+export function instagramGraphHosts(accessToken: string): GraphHost[] {
+  if (accessToken.startsWith("IG")) return ["instagram", "facebook"];
+  if (accessToken.startsWith("EAA")) return ["facebook", "instagram"];
+  return ["instagram", "facebook"];
 }
 
 async function graphPost(
   path: string,
-  params: Record<string, string>
+  params: Record<string, string>,
+  host: GraphHost = "facebook"
 ): Promise<Record<string, unknown>> {
   const body = new URLSearchParams(params);
-  const res = await fetch(graphUrl(path), { method: "POST", body });
+  const res = await fetch(graphUrl(path, host), { method: "POST", body });
   const json = (await res.json()) as Record<string, unknown>;
   if (!res.ok) {
-    const err = (json.error as { message?: string } | undefined)?.message;
-    throw new Error(err || `Graph API error (${res.status})`);
+    throw new Error(graphErrorMessage(json, res.status));
   }
   return json;
 }
@@ -54,33 +90,39 @@ function sandboxPublish(input: PublishInput): PublishResult {
   return { externalId: id, externalUrl: url, sandbox: true };
 }
 
-async function publishInstagram(input: PublishInput): Promise<PublishResult> {
-  if (!input.mediaUrl) {
-    throw new Error("Instagram posts require an image (mediaUrl).");
-  }
-  // Step 1: create a media container.
-  const container = await graphPost(`${input.externalId}/media`, {
-    image_url: input.mediaUrl,
-    caption: input.caption,
-    access_token: input.accessToken,
-  });
+async function publishInstagramOnHost(
+  input: PublishInput,
+  host: GraphHost
+): Promise<PublishResult> {
+  const container = await graphPost(
+    `${input.externalId}/media`,
+    {
+      image_url: input.mediaUrl as string,
+      caption: input.caption,
+      access_token: input.accessToken,
+    },
+    host
+  );
   const creationId = container.id as string;
 
-  // Step 2: publish the container.
-  const published = await graphPost(`${input.externalId}/media_publish`, {
-    creation_id: creationId,
-    access_token: input.accessToken,
-  });
+  const published = await graphPost(
+    `${input.externalId}/media_publish`,
+    {
+      creation_id: creationId,
+      access_token: input.accessToken,
+    },
+    host
+  );
   const mediaId = published.id as string;
 
-  // Step 3: fetch the permalink (best effort).
   let permalink: string | null = null;
   try {
     const res = await fetch(
       graphUrl(
         `${mediaId}?fields=permalink&access_token=${encodeURIComponent(
           input.accessToken
-        )}`
+        )}`,
+        host
       )
     );
     const json = (await res.json()) as { permalink?: string };
@@ -90,6 +132,27 @@ async function publishInstagram(input: PublishInput): Promise<PublishResult> {
   }
 
   return { externalId: mediaId, externalUrl: permalink, sandbox: false };
+}
+
+async function publishInstagram(input: PublishInput): Promise<PublishResult> {
+  if (!input.mediaUrl) {
+    throw new Error("Instagram posts require an image (mediaUrl).");
+  }
+  // Instagram API with Instagram Login uses graph.instagram.com. Page-linked
+  // IG Business accounts from Facebook Login still use graph.facebook.com.
+  const hosts = instagramGraphHosts(input.accessToken);
+  let lastError: Error | null = null;
+  for (let i = 0; i < hosts.length; i++) {
+    try {
+      return await publishInstagramOnHost(input, hosts[i]!);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      const canRetry =
+        i < hosts.length - 1 && isWrongGraphHostError(lastError.message);
+      if (!canRetry) throw lastError;
+    }
+  }
+  throw lastError || new Error("Instagram publish failed");
 }
 
 async function publishFacebook(input: PublishInput): Promise<PublishResult> {
@@ -139,6 +202,11 @@ export const PAGES_OAUTH_SCOPES = [
   "business_management",
 ] as const;
 
+export const INSTAGRAM_LOGIN_SCOPES = [
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+] as const;
+
 export function metaLoginConfigId(): string {
   return (process.env.META_LOGIN_CONFIG_ID || "").trim();
 }
@@ -173,15 +241,11 @@ function facebookDialogUrl(
   return `https://www.facebook.com/${graphVersion()}/dialog/oauth?${params}`;
 }
 
-// Facebook Login for Business rejects public_profile-only dialogs with
-// "this app requires at least one supported permission". pages_show_list is
-// the smallest extra permission a marketing app needs. When a Login for
-// Business configuration exists, config_id replaces the scope list.
+// Facebook Login — personal accounts. Do not attach Login for Business
+// config_id or Page scopes here: those require a Meta Business portfolio.
+// public_profile is enough to sign in.
 export function facebookLoginUrl(redirectUri: string, state: string): string {
-  return facebookDialogUrl(redirectUri, state, {
-    scopes: ["public_profile", "pages_show_list"],
-    configId: metaLoginConfigId(),
-  });
+  return facebookDialogUrl(redirectUri, state, { scopes: ["public_profile"] });
 }
 
 // Instagram Login (Instagram API with Instagram Login).
@@ -190,10 +254,7 @@ export function instagramLoginUrl(redirectUri: string, state: string): string {
     client_id: process.env.META_APP_ID || "",
     redirect_uri: redirectUri,
     state,
-    scope: [
-      "instagram_business_basic",
-      "instagram_business_content_publish",
-    ].join(","),
+    scope: INSTAGRAM_LOGIN_SCOPES.join(","),
     response_type: "code",
   });
   return `https://www.instagram.com/oauth/authorize?${params}`;
@@ -215,6 +276,7 @@ export interface SocialProfile {
   name: string;
   email: string | null;
   avatarUrl: string | null;
+  username?: string | null;
 }
 
 export async function fetchFacebookProfile(
@@ -279,6 +341,27 @@ export async function exchangeInstagramCodeForToken(
   return { accessToken, userId };
 }
 
+export async function exchangeInstagramLongLivedToken(
+  shortLivedToken: string
+): Promise<string> {
+  const params = new URLSearchParams({
+    grant_type: "ig_exchange_token",
+    client_secret: process.env.META_APP_SECRET || "",
+    access_token: shortLivedToken,
+  });
+  const res = await fetch(
+    `https://graph.instagram.com/${graphVersion()}/access_token?${params}`
+  );
+  const json = (await res.json()) as {
+    access_token?: string;
+    error?: { message?: string };
+  };
+  if (!res.ok || !json.access_token) {
+    return shortLivedToken;
+  }
+  return json.access_token;
+}
+
 export async function fetchInstagramProfile(
   accessToken: string
 ): Promise<SocialProfile> {
@@ -304,12 +387,13 @@ export async function fetchInstagramProfile(
   if (!id) {
     throw new Error("Instagram profile did not include a user id");
   }
-  const username = json.username ? `@${json.username}` : "Instagram user";
+  const username = json.username ? `@${json.username}` : null;
   return {
     id,
-    name: json.name || username,
+    name: json.name || username || "Instagram user",
     email: null,
     avatarUrl: json.profile_picture_url || null,
+    username,
   };
 }
 

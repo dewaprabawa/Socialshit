@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { databaseConfigured } from "@/lib/db";
 import { exchangeCodeForToken, graphVersion } from "@/lib/meta";
 
-async function upsertOwnedAccount(
+export async function upsertOwnedAccount(
   userId: string,
   data: {
     platform: "facebook" | "instagram";
@@ -127,4 +127,24 @@ export async function completePagesOAuth(
       new URL(`/accounts?error=${encodeURIComponent(message)}`, req.url)
     );
   }
+}
+
+export async function attachInstagramPublishingAccount(
+  userId: string,
+  data: {
+    name: string;
+    handle: string | null;
+    externalId: string;
+    accessToken: string;
+    avatarUrl?: string | null;
+  }
+) {
+  await upsertOwnedAccount(userId, {
+    platform: "instagram",
+    name: data.name,
+    handle: data.handle,
+    externalId: data.externalId,
+    accessToken: data.accessToken,
+    avatarUrl: data.avatarUrl,
+  });
 }
