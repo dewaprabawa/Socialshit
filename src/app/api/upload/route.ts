@@ -41,10 +41,38 @@ export async function POST(req: NextRequest) {
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  const dir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(dir, { recursive: true });
   const filename = `${randomUUID()}.${ext}`;
-  await writeFile(path.join(dir, filename), bytes);
 
-  return NextResponse.json({ url: `/uploads/${filename}` }, { status: 201 });
+  // On Vercel (read-only FS) use Vercel Blob when a token is configured.
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { put } = await import("@vercel/blob");
+      const blob = await put(`uploads/${filename}`, bytes, {
+        access: "public",
+        contentType: file.type,
+      });
+      return NextResponse.json({ url: blob.url }, { status: 201 });
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Blob upload failed" },
+        { status: 502 }
+      );
+    }
+  }
+
+  // Local/dev: write to the public/uploads directory.
+  try {
+    const dir = path.join(process.cwd(), "public", "uploads");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), bytes);
+    return NextResponse.json({ url: `/uploads/${filename}` }, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Could not save the file. On serverless hosting set BLOB_READ_WRITE_TOKEN to enable uploads.",
+      },
+      { status: 500 }
+    );
+  }
 }
