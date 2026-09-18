@@ -55,7 +55,7 @@ Then:
 
 1. **Add a Postgres database** — Vercel Storage → Postgres (or Neon) and set `DATABASE_URL`. The build runs `prisma migrate deploy` via `vercel-build`.
 2. **Enable uploads (optional)** — add a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`).
-3. **Scheduler** — `vercel.json` hits `/api/scheduler/tick` every 5 minutes.
+3. **Scheduler** — `vercel.json` hits `/api/scheduler/tick` once a day (Hobby-plan limit). Upgrade Vercel or call that endpoint yourself for more frequent publishes.
 4. **Optional** — `OPENAI_API_KEY`, `META_APP_ID`/`META_APP_SECRET`, `CANVA_CLIENT_ID`/`CANVA_CLIENT_SECRET`.
 
 CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
