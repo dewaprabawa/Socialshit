@@ -31,7 +31,19 @@ export async function GET(req: NextRequest) {
         ? "/accounts"
         : "/login";
     const lower = err.toLowerCase();
-    const code = lower.includes("invalid scope") ? "invalid_scopes" : err;
+    let code = err;
+    if (lower.includes("invalid scope")) code = "invalid_scopes";
+    else if (
+      lower.includes("tidak bisa diakses") ||
+      lower.includes("not accessible") ||
+      lower.includes("isn't available") ||
+      lower.includes("isnt available") ||
+      lower.includes("app not available") ||
+      lower.includes("temporarily_unavailable") ||
+      lower.includes("app_not_setup")
+    ) {
+      code = "app_unavailable";
+    }
     return NextResponse.redirect(
       new URL(`${dest}?error=${encodeURIComponent(code)}`, req.url)
     );

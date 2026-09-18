@@ -96,7 +96,7 @@ APP_BASE_URL=http://localhost:3000
 On Vercel, `APP_BASE_URL` must be your public HTTPS origin, for example `https://socialshit-dev-1.vercel.app`. Redeploy after saving.
 
 6. Add `localhost` (and your production domain) under **App domains**.
-7. Development-mode apps only allow **Admins / Developers / Testers**. Add yourself under **App roles**.
+7. Development-mode apps only allow **Admins / Developers / Testers**. Add yourself under **App roles** and accept the invite. If Facebook says **Aplikasi ini tidak bisa diakses sekarang** / the app will be reactivated later, the Facebook account you are using is not a role on the app, Facebook Login is missing, or the app is switched off. Live mode is not required.
 8. Restart `npm run dev` (or wait for the Vercel redeploy). Reload `/login` — the sandbox note should disappear. Click **Continue with Facebook**.
 9. After you are signed in, go to **Accounts → Add integration → Connect with Meta** to attach Facebook Pages and linked Instagram Business accounts for publishing.
 10. **Invalid Scopes** on Connect Pages: consumer Facebook Login cannot request Page/IG publishing permissions until they are added. Add **Facebook Login for Business** → **Configurations** → User access token with the publishing permissions below, copy the Config ID into `META_LOGIN_CONFIG_ID`, Redeploy. Or add each permission under **App Review → Permissions and Features** (Development testers can use them without submitting review).

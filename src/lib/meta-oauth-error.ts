@@ -27,8 +27,23 @@ export function friendlyMetaOAuthError(
     );
   }
 
-  if (decoded === "access_denied" || decoded === "user_denied") {
-    return "Facebook login was cancelled. Try again.";
+  if (
+    lower === "app_unavailable" ||
+    lower.includes("tidak bisa diakses") ||
+    lower.includes("not accessible") ||
+    lower.includes("isn't available") ||
+    lower.includes("isnt available") ||
+    lower.includes("app not available") ||
+    lower.includes("temporarily_unavailable") ||
+    lower.includes("app_not_setup")
+  ) {
+    return (
+      "Facebook blocked this login because the Meta app is in Development, " +
+      "turned off, or your Facebook account is not an Admin/Developer/Tester. " +
+      "Open the Meta app → App roles and add the same Facebook account you use to log in. " +
+      "Add the Facebook Login product, paste the Valid OAuth Redirect URI, add the App domain " +
+      "(no https://), and keep App Mode on Development while you test. Live mode is not required."
+    );
   }
 
   if (lower.includes("redirect_uri") || lower === "redirect_uri") {

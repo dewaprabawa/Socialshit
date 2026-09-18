@@ -60,6 +60,15 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const loginBusinessUrl = metaAppId
     ? `${appBase}/fb-login-business/configurations/`
     : "https://developers.facebook.com/docs/facebook-login/facebook-login-for-business/";
+  const rolesUrl = metaAppId
+    ? `${appBase}/roles/roles/`
+    : "https://developers.facebook.com/apps/";
+  const loginSettingsUrl = metaAppId
+    ? `${appBase}/fb-login/settings/`
+    : "https://developers.facebook.com/apps/";
+  const basicSettingsUrl = metaAppId
+    ? `${appBase}/settings/basic/`
+    : "https://developers.facebook.com/apps/";
 
   return (
     <div className="card space-y-4 text-sm">
@@ -74,17 +83,74 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
         </p>
       </div>
 
+      {metaReady && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-amber-100">
+          <p className="font-medium text-amber-50">
+            “Aplikasi ini tidak bisa diakses sekarang”
+          </p>
+          <p className="mt-1 text-xs text-amber-100/90">
+            Facebook shows that when the app is in Development and your Facebook
+            account is not a role on the app, Facebook Login is missing, or the
+            app is switched off. Live / App Review is not required for you to
+            sign in.
+          </p>
+          <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-amber-100/90">
+            <li>
+              Open{" "}
+              <a
+                className="text-white underline"
+                href={rolesUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                App roles
+              </a>{" "}
+              and add the same Facebook user you click Continue with. Role:{" "}
+              <span className="text-white">Administrator</span> or{" "}
+              <span className="text-white">Tester</span>. Accept the invite email
+              if Facebook sends one.
+            </li>
+            <li>
+              Add{" "}
+              <a
+                className="text-white underline"
+                href={loginSettingsUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Facebook Login
+              </a>{" "}
+              (Use cases → Authentication and Account Creation → Customize). Turn
+              on Client OAuth login and Web OAuth login.
+            </li>
+            <li>
+              In{" "}
+              <a
+                className="text-white underline"
+                href={basicSettingsUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Settings → Basic
+              </a>{" "}
+              set App domains to the host below (no https://) and add a Website
+              platform with the Site URL. Keep App Mode on{" "}
+              <span className="text-white">Development</span>.
+            </li>
+          </ol>
+        </div>
+      )}
+
       {metaReady && !metaLoginConfig && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-amber-100">
           <p className="font-medium text-amber-50">
             Invalid Scopes on Connect with Meta
           </p>
           <p className="mt-1 text-xs text-amber-100/90">
-            Facebook Login (sign-in) works. Connect Pages currently asks for Page
-            and Instagram publishing permissions that this app has not enabled.
-            Developers see “Konten ini tidak tersedia / Invalid Scopes”. Add{" "}
-            <span className="text-white">Facebook Login for Business</span>, then
-            paste the Config ID as <code className="text-white">META_LOGIN_CONFIG_ID</code>.
+            After login works, Connect Pages still needs Facebook Login for
+            Business. Add that product, create a User access token configuration,
+            then paste the Config ID as{" "}
+            <code className="text-white">META_LOGIN_CONFIG_ID</code>.
           </p>
         </div>
       )}
