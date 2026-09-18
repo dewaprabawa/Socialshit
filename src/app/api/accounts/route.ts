@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { metaConfigured } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +25,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
-  // Sandbox unless a real token + Meta app credentials are supplied.
-  const sandbox = !accessToken || accessToken === "sandbox" || !metaConfigured();
+  // A real Page/user access token is enough to publish via the Graph API, so a
+  // manually-provided token creates a live account. Sandbox when no real token
+  // is given, when the token is the literal "sandbox", or when explicitly asked.
+  const sandbox =
+    body.sandbox === true || !accessToken || accessToken === "sandbox";
+
+  if (!sandbox && !externalId) {
+    return NextResponse.json(
+      {
+        error:
+          "A Page ID (Facebook) or Instagram Business Account ID is required for a live connection.",
+      },
+      { status: 400 }
+    );
+  }
 
   const account = await prisma.account.create({
     data: {
