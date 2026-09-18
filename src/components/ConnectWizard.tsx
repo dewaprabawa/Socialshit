@@ -16,6 +16,7 @@ const STEPS = ["Platform", "Method", "Details", "Done"];
 export function ConnectWizard({ open, onClose, onConnected }: Props) {
   const [step, setStep] = useState(0);
   const [metaReady, setMetaReady] = useState(false);
+  const [metaLoginConfig, setMetaLoginConfig] = useState(false);
   const [platform, setPlatform] = useState<Platform | "">("");
   const [method, setMethod] = useState<Method | "">("");
 
@@ -29,6 +30,7 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
   const [created, setCreated] = useState<{ name: string; sandbox: boolean } | null>(
     null
   );
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -44,8 +46,12 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
     setCreated(null);
     fetch("/api/config")
       .then((r) => r.json())
-      .then((d) => setMetaReady(Boolean(d.meta)))
+      .then((d) => {
+        setMetaReady(Boolean(d.meta));
+        setMetaLoginConfig(Boolean(d.metaLoginConfig));
+      })
       .catch(() => setMetaReady(false));
+    setOrigin(window.location.origin.replace(/\/$/, ""));
   }, [open]);
 
   if (!open) return null;
@@ -72,7 +78,10 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
   }
 
   function startMetaOAuth() {
-    window.location.href = "/api/auth/meta";
+    window.location.href =
+      platform === "instagram"
+        ? "/api/auth/instagram?next=/accounts"
+        : "/api/auth/meta";
   }
 
   async function submit() {
@@ -193,7 +202,7 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                     {
                       key: "instagram",
                       title: "Instagram Business",
-                      desc: "Publish photos to an IG Business/Creator account.",
+                      desc: "Publish photos with Instagram API with Instagram Login.",
                     },
                   ] as { key: Platform; title: string; desc: string }[]
                 ).map((p) => (
@@ -224,8 +233,8 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
               </div>
               {platform === "instagram" && (
                 <p className="mt-3 text-xs text-amber-400/80">
-                  Instagram publishing requires an IG Business account linked to a
-                  Facebook Page.
+                  Requires a Professional Instagram account (Business or Creator).
+                  No Facebook Page or Business Manager.
                 </p>
               )}
             </div>
@@ -253,8 +262,9 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-slate-400">
-                  Securely authorize via Facebook. Automatically discovers your
-                  Pages and linked Instagram accounts.
+                  {platform === "instagram"
+                    ? "Instagram API with Instagram Login — Meta’s business publishing API. Sign in with a Professional Instagram account. No Facebook Page or Business Manager."
+                    : "Finds Facebook Pages you admin. You need a Page for this step, not a Meta Business portfolio. Until you have a Page, use Instagram Login or a sandbox account."}
                 </p>
                 {!metaReady && (
                   <p className="mt-2 text-xs text-amber-400/80">
@@ -267,10 +277,15 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                 onClick={() => chooseMethod("manual")}
                 className="w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-brand-500/50"
               >
-                <span className="font-medium">Enter an access token manually</span>
+                <span className="font-medium">
+                  {platform === "instagram"
+                    ? "Enter an Instagram access token"
+                    : "Enter an access token manually"}
+                </span>
                 <p className="mt-1 text-sm text-slate-400">
-                  For advanced users with a Page access token and account ID from
-                  the Meta developer tools.
+                  {platform === "instagram"
+                    ? "Paste a long-lived Instagram User token from Instagram Login (graph.instagram.com) or a Page token linked to IG."
+                    : "For advanced users with a Page access token and account ID from the Meta developer tools."}
                 </p>
               </button>
 
@@ -298,16 +313,65 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
             <div className="space-y-4">
               <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
                 <p className="font-medium text-white">
-                  You&apos;ll be redirected to Facebook
+                  {platform === "instagram"
+                    ? "You'll be redirected to Instagram"
+                    : "You'll be redirected to Facebook"}
                 </p>
-                <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-400">
-                  <li>Log in and choose the Pages to connect.</li>
-                  <li>Approve the requested permissions.</li>
-                  <li>
-                    We&apos;ll import each Page and its linked Instagram Business
-                    account automatically.
-                  </li>
-                </ol>
+                {platform === "instagram" ? (
+                  <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-400">
+                    <li>Sign in with your Professional Instagram account.</li>
+                    <li>
+                      Approve Instagram API with Instagram Login (no Meta
+                      Business portfolio required).
+                    </li>
+                    <li>
+                      We&apos;ll save that account so you can publish photos.
+                    </li>
+                  </ol>
+                ) : (
+                  <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-400">
+                    <li>Log in and choose the Pages to connect.</li>
+                    <li>Approve the requested permissions.</li>
+                    <li>
+                      We&apos;ll import each Page and its linked Instagram
+                      Business account automatically.
+                    </li>
+                  </ol>
+                )}
+                {platform === "instagram" && (
+                  <p className="mt-3 text-xs text-amber-200/90">
+                    This uses Instagram API with Instagram Login — Meta&apos;s
+                    business publishing API that does not require connecting
+                    your personal Facebook to Business Manager. Instagram
+                    callback:
+                  </p>
+                )}
+                {platform === "facebook" && !metaLoginConfig && (
+                  <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-100">
+                    <p className="font-medium text-amber-50">
+                      Facebook Pages still need a Page you admin
+                    </p>
+                    <p className="mt-1 text-amber-100/90">
+                      Prefer Instagram Login for publishing without a Business
+                      portfolio. For a Facebook Page, create a Page or paste a
+                      Page access token from Graph API Explorer.
+                    </p>
+                  </div>
+                )}
+                {platform === "facebook" && (
+                  <p className="mt-3 text-xs text-amber-200/90">
+                    Facebook Login callback URI:
+                  </p>
+                )}
+                <code className="mt-1 block break-all rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs text-slate-200">
+                  {origin
+                    ? `${origin}/api/auth/${
+                        platform === "instagram" ? "instagram" : "facebook"
+                      }/callback`
+                    : `/api/auth/${
+                        platform === "instagram" ? "instagram" : "facebook"
+                      }/callback`}
+                </code>
               </div>
               <div className="flex justify-between">
                 <button onClick={() => setStep(1)} className="btn-ghost">
@@ -354,7 +418,11 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                 />
               </div>
               <div>
-                <label className="label">Page access token</label>
+                <label className="label">
+                  {platform === "instagram"
+                    ? "Instagram access token"
+                    : "Page access token"}
+                </label>
                 <input
                   className="input"
                   type="password"
@@ -364,24 +432,35 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                 />
               </div>
               <div className="rounded-lg border border-white/10 bg-slate-800/50 p-3 text-xs text-slate-400">
-                Get these from{" "}
-                <a
-                  className="text-brand-400 hover:underline"
-                  href="https://developers.facebook.com/tools/explorer/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Meta Graph API Explorer
-                </a>
-                . You need a long-lived Page access token with{" "}
-                <code>pages_manage_posts</code>
-                {platform === "instagram" && (
+                {platform === "instagram" ? (
                   <>
-                    {" "}
-                    and <code>instagram_content_publish</code>
+                    Instagram Login tokens come from this app’s Instagram OAuth
+                    (preferred). You can also paste a token from{" "}
+                    <a
+                      className="text-brand-400 hover:underline"
+                      href="https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Instagram API with Instagram Login
+                    </a>
+                    . Publishing uses <code>graph.instagram.com</code>.
+                  </>
+                ) : (
+                  <>
+                    Get these from{" "}
+                    <a
+                      className="text-brand-400 hover:underline"
+                      href="https://developers.facebook.com/tools/explorer/"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Meta Graph API Explorer
+                    </a>
+                    . You need a long-lived Page access token with{" "}
+                    <code>pages_manage_posts</code>.
                   </>
                 )}
-                .
               </div>
               <div className="flex justify-between pt-1">
                 <button onClick={() => setStep(1)} className="btn-ghost">

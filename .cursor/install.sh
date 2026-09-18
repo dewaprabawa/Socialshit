@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Idempotent bootstrap for the Socialshit dev environment.
+# Idempotent bootstrap for the SocialHack dev environment.
 # Runs after the repository is checked out; safe to run repeatedly.
 
 # Ensure a local env file exists so DATABASE_URL is always defined.

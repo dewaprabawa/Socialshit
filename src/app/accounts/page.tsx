@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { PlatformBadge } from "@/components/StatusBadge";
 import { ConnectWizard } from "@/components/ConnectWizard";
+import { MetaSetupGuide } from "@/components/MetaSetupGuide";
 import { parseJson } from "@/lib/parse-json";
+import { friendlyMetaOAuthError } from "@/lib/meta-oauth-error";
 
 interface Account {
   id: string;
@@ -24,6 +26,7 @@ export default function AccountsPage() {
   const [canva, setCanva] = useState<{ configured: boolean; connected: boolean }>(
     { configured: false, connected: false }
   );
+  const [metaReady, setMetaReady] = useState(false);
   const [message, setMessage] = useState<{
     type: "ok" | "err";
     text: string;
@@ -36,11 +39,15 @@ export default function AccountsPage() {
           parseJson<{ accounts?: Account[] }>(r)
         ),
         fetch("/api/config").then((r) =>
-          parseJson<{ canva?: { configured: boolean; connected: boolean } }>(r)
+          parseJson<{
+            meta?: boolean;
+            canva?: { configured: boolean; connected: boolean };
+          }>(r)
         ),
       ]);
       setAccounts(a.accounts || []);
       setCanva(c.canva || { configured: false, connected: false });
+      setMetaReady(Boolean(c.meta));
     } catch (err) {
       setMessage({
         type: "err",
@@ -60,7 +67,13 @@ export default function AccountsPage() {
         text: `Connected ${params.get("connected")} account(s) from Meta.`,
       });
     } else if (params.get("error")) {
-      setMessage({ type: "err", text: `Meta error: ${params.get("error")}` });
+      const origin = window.location.origin.replace(/\/$/, "");
+      setMessage({
+        type: "err",
+        text:
+          friendlyMetaOAuthError(params.get("error"), origin) ||
+          `Meta error: ${params.get("error")}`,
+      });
     } else if (params.get("canva") === "connected") {
       setMessage({ type: "ok", text: "Canva connected." });
     } else if (params.get("canvaError")) {
@@ -92,7 +105,8 @@ export default function AccountsPage() {
         <div>
           <h1 className="text-2xl font-bold">Accounts</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Connect your Instagram Business account and Facebook Page.
+            Connect Instagram with Instagram Login (business API, no Business
+            Manager) or a Facebook Page you admin.
           </p>
         </div>
         <button
@@ -219,6 +233,8 @@ export default function AccountsPage() {
           </div>
         </div>
       </div>
+
+      <MetaSetupGuide metaReady={metaReady} />
 
       <ConnectWizard
         open={wizardOpen}

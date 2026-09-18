@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { APP_NAME } from "@/lib/brand";
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-white/10">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-slate-500">
-        <span>© {new Date().getFullYear()} Socialshit</span>
+        <span>© {new Date().getFullYear()} {APP_NAME}</span>
         <nav className="flex items-center gap-4">
           <Link href="/privacy" className="hover:text-slate-300">
             Privacy Policy

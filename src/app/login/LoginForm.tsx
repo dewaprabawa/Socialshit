@@ -3,6 +3,8 @@
 import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MetaSetupGuide } from "@/components/MetaSetupGuide";
+import { friendlyMetaOAuthError } from "@/lib/meta-oauth-error";
+import { APP_NAME } from "@/lib/brand";
 
 type Provider = "facebook" | "instagram";
 
@@ -36,17 +38,9 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
   const errorText = useMemo(() => {
     if (!error) return null;
-    const decoded = error.replace(/\+/g, " ");
-    if (decoded === "access_denied" || decoded === "user_denied") {
-      return "Facebook login was cancelled. Try Continue with Facebook again.";
-    }
-    if (decoded.toLowerCase().includes("invalid scope")) {
-      return "This Meta app has not enabled the requested Facebook permission. In Use cases → Authentication, add public_profile, then retry.";
-    }
-    if (decoded.toLowerCase().includes("redirect_uri")) {
-      return `${decoded} Add http://localhost:3000/api/auth/facebook/callback to Valid OAuth Redirect URIs.`;
-    }
-    return decoded;
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    return friendlyMetaOAuthError(error, origin);
   }, [error]);
   const facebookHref = `/api/auth/facebook?next=${encodeURIComponent(next)}`;
   const instagramHref = `/api/auth/instagram?next=${encodeURIComponent(next)}`;
@@ -59,11 +53,12 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
             S
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight">
-            Sign in to Socialshit
+            Sign in to {APP_NAME}
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Continue with Facebook or Instagram to generate, schedule, and
-            publish content.
+            Continue with Facebook signs you in with a personal account.
+            Continue with Instagram uses Instagram API with Instagram Login —
+            Meta&apos;s business publishing API. No Business Manager required.
           </p>
         </div>
 
@@ -76,7 +71,9 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
           {metaReady && (
             <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-              Meta app connected. Continue with Facebook now opens Facebook Login.
+              Meta app connected. Facebook Login is personal (
+              <code>public_profile</code>). Instagram Login is the business
+              publishing API (Professional IG, no Business Manager).
             </div>
           )}
 
@@ -100,7 +97,7 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
           <p className="pt-1 text-center text-xs text-slate-500">
             {metaReady
-              ? "You’ll be redirected to Facebook or Instagram to authorize Socialshit."
+              ? `You’ll be redirected to Facebook or Instagram to authorize ${APP_NAME}.`
               : "Meta app keys are not set — these buttons create a sandbox session so you can try the full marketing flow."}{" "}
             By continuing, you agree to our{" "}
             <a href="/privacy" className="text-slate-300 hover:underline">

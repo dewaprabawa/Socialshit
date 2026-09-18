@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "@/lib/prisma";
+import { databaseConfigured, prisma } from "@/lib/prisma";
 
 export const SESSION_COOKIE = "socialshit_session";
 export const OAUTH_STATE_COOKIE = "socialshit_oauth_state";
 const SESSION_MS = 1000 * 60 * 60 * 24 * 30;
+const EPHEMERAL_PREFIX = "e1.";
 
 export type AuthUser = {
   id: string;
@@ -45,10 +46,88 @@ function oauthSigningSecret(): string {
   return process.env.META_APP_SECRET || process.env.APP_BASE_URL || "socialshit-oauth";
 }
 
-export function signOAuthState(nextPath: string): string {
+export function toAuthUser(input: {
+  id?: string;
+  provider: string;
+  providerUserId: string;
+  name: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  sandbox?: boolean;
+}): AuthUser {
+  const id =
+    input.id ||
+    `eph-${input.provider}-${input.providerUserId}`
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .slice(0, 64);
+  return {
+    id,
+    provider: input.provider,
+    providerUserId: input.providerUserId,
+    name: input.name,
+    email: input.email ?? null,
+    avatarUrl: input.avatarUrl ?? null,
+    sandbox: Boolean(input.sandbox),
+  };
+}
+
+export function createEphemeralToken(user: AuthUser): {
+  token: string;
+  expiresAt: Date;
+} {
+  const expiresAt = new Date(Date.now() + SESSION_MS);
+  const payload = Buffer.from(
+    JSON.stringify({
+      id: user.id,
+      provider: user.provider,
+      providerUserId: user.providerUserId,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      sandbox: user.sandbox,
+      exp: expiresAt.getTime(),
+    })
+  ).toString("base64url");
+  const sig = crypto
+    .createHmac("sha256", oauthSigningSecret())
+    .update(payload)
+    .digest("base64url");
+  return { token: `${EPHEMERAL_PREFIX}${payload}.${sig}`, expiresAt };
+}
+
+export function readEphemeralUser(token: string | undefined): AuthUser | null {
+  if (!token?.startsWith(EPHEMERAL_PREFIX)) return null;
+  const rest = token.slice(EPHEMERAL_PREFIX.length);
+  const i = rest.lastIndexOf(".");
+  if (i <= 0) return null;
+  const payload = rest.slice(0, i);
+  const sig = rest.slice(i + 1);
+  const expected = crypto
+    .createHmac("sha256", oauthSigningSecret())
+    .update(payload)
+    .digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    const data = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8")
+    ) as AuthUser & { exp?: number };
+    if (!data.exp || data.exp < Date.now() || !data.id) return null;
+    return toAuthUser(data);
+  } catch {
+    return null;
+  }
+}
+
+export function signOAuthState(
+  nextPath: string,
+  flow: "login" | "pages" | "ig" = "login"
+): string {
   const payload = Buffer.from(
     JSON.stringify({
       n: safeNextPath(nextPath),
+      f: flow,
       t: Date.now(),
       r: crypto.randomBytes(8).toString("hex"),
     })
@@ -60,7 +139,10 @@ export function signOAuthState(nextPath: string): string {
   return `${payload}.${sig}`;
 }
 
-export function readSignedOAuthState(state: string | null): string | null {
+export function readOAuthState(state: string | null): {
+  next: string;
+  flow: "login" | "pages" | "ig";
+} | null {
   if (!state) return null;
   const i = state.lastIndexOf(".");
   if (i <= 0) return null;
@@ -76,13 +158,21 @@ export function readSignedOAuthState(state: string | null): string | null {
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       n?: string;
+      f?: string;
       t?: number;
     };
     if (!data.t || Date.now() - data.t > 10 * 60 * 1000) return null;
-    return safeNextPath(data.n);
+    return {
+      next: safeNextPath(data.n),
+      flow: data.f === "pages" ? "pages" : data.f === "ig" ? "ig" : "login",
+    };
   } catch {
     return null;
   }
+}
+
+export function readSignedOAuthState(state: string | null): string | null {
+  return readOAuthState(state)?.next ?? null;
 }
 
 export function applyOAuthStateCookie(res: NextResponse, state: string) {
@@ -164,6 +254,9 @@ export async function getCurrentUser(
 ): Promise<AuthUser | null> {
   const token = readSessionToken(req);
   if (!token) return null;
+  const ephemeral = readEphemeralUser(token);
+  if (ephemeral) return ephemeral;
+  if (!databaseConfigured()) return null;
   try {
     const session = await prisma.session.findUnique({
       where: { tokenHash: hashToken(token) },
@@ -186,6 +279,8 @@ export async function getCurrentUser(
 export async function destroySession(req?: NextRequest) {
   const token = readSessionToken(req);
   if (!token) return;
+  if (readEphemeralUser(token)) return;
+  if (!databaseConfigured()) return;
   await prisma.session
     .deleteMany({ where: { tokenHash: hashToken(token) } })
     .catch(() => undefined);
@@ -236,15 +331,57 @@ export async function upsertOAuthUser(input: {
   });
 }
 
+export async function persistUser(input: {
+  provider: "facebook" | "instagram";
+  providerUserId: string;
+  name: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  sandbox?: boolean;
+}): Promise<AuthUser> {
+  const fallback = toAuthUser(input);
+  if (!databaseConfigured()) return fallback;
+  try {
+    return await upsertOAuthUser(input);
+  } catch (err) {
+    console.error("[auth] persistUser falling back to cookie session:", err);
+    return fallback;
+  }
+}
+
 export async function finishLogin(
   req: NextRequest,
-  userId: string,
+  user: AuthUser | string,
   nextPath?: string | null
 ) {
-  const { token, expiresAt } = await createSessionToken(userId);
   const dest = new URL(safeNextPath(nextPath), req.nextUrl.origin);
   const res = NextResponse.redirect(dest);
-  applySessionCookie(res, token, expiresAt);
+  const profile = typeof user === "string" ? null : user;
+
+  if (profile && (!databaseConfigured() || profile.id.startsWith("eph-"))) {
+    const { token, expiresAt } = createEphemeralToken(profile);
+    applySessionCookie(res, token, expiresAt);
+    res.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
+    return res;
+  }
+
+  const userId = typeof user === "string" ? user : user.id;
+  try {
+    const { token, expiresAt } = await createSessionToken(userId);
+    applySessionCookie(res, token, expiresAt);
+  } catch (err) {
+    console.error("[auth] createSessionToken failed, using cookie session:", err);
+    const fallback =
+      profile ||
+      toAuthUser({
+        id: userId,
+        provider: "facebook",
+        providerUserId: userId,
+        name: "Signed-in user",
+      });
+    const { token, expiresAt } = createEphemeralToken(fallback);
+    applySessionCookie(res, token, expiresAt);
+  }
   res.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 }
@@ -255,7 +392,7 @@ export async function sandboxLogin(
   nextPath?: string | null
 ) {
   const name = provider === "instagram" ? "Instagram Demo" : "Facebook Demo";
-  const user = await upsertOAuthUser({
+  const user = await persistUser({
     provider,
     providerUserId: `demo-${provider}`,
     name,
@@ -263,14 +400,19 @@ export async function sandboxLogin(
     avatarUrl: `https://api.dicebear.com/9.x/identicon/svg?seed=${provider}-demo`,
     sandbox: true,
   });
-  await ensureSandboxAccounts(user.id, provider);
-  return finishLogin(req, user.id, nextPath);
+  try {
+    await ensureSandboxAccounts(user.id, provider);
+  } catch (err) {
+    console.error("[auth] ensureSandboxAccounts skipped:", err);
+  }
+  return finishLogin(req, user, nextPath);
 }
 
 export async function ensureSandboxAccounts(
   userId: string,
   provider: "facebook" | "instagram"
 ) {
+  if (!databaseConfigured()) return;
   const count = await prisma.account.count({ where: { userId } });
   if (count > 0) return;
 

@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   finishLogin,
   oauthBaseUrl,
-  readSignedOAuthState,
-  upsertOAuthUser,
+  persistUser,
+  readOAuthState,
   verifyOAuthState,
 } from "@/lib/auth";
+import { completePagesOAuth } from "@/lib/connect-pages";
 import {
   exchangeCodeForToken,
   fetchFacebookProfile,
@@ -25,8 +26,31 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("error_reason") ||
     req.nextUrl.searchParams.get("error");
   if (err) {
+    const dest =
+      readOAuthState(req.nextUrl.searchParams.get("state"))?.flow === "pages"
+        ? "/accounts"
+        : "/login";
+    const lower = err.toLowerCase();
+    let code = err;
+    if (lower.includes("invalid scope")) code = "invalid_scopes";
+    else if (
+      lower.includes("supported permission") ||
+      lower.includes("setidaknya satu")
+    ) {
+      code = "missing_supported_permission";
+    } else if (
+      lower.includes("tidak bisa diakses") ||
+      lower.includes("not accessible") ||
+      lower.includes("isn't available") ||
+      lower.includes("isnt available") ||
+      lower.includes("app not available") ||
+      lower.includes("temporarily_unavailable") ||
+      lower.includes("app_not_setup")
+    ) {
+      code = "app_unavailable";
+    }
     return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(err)}`, req.url)
+      new URL(`${dest}?error=${encodeURIComponent(code)}`, req.url)
     );
   }
   const code = req.nextUrl.searchParams.get("code");
@@ -43,11 +67,16 @@ export async function GET(req: NextRequest) {
   }
 
   const redirectUri = `${oauthBaseUrl(req)}/api/auth/facebook/callback`;
+  const parsed = readOAuthState(state);
+
+  if (parsed?.flow === "pages") {
+    return completePagesOAuth(req, code, redirectUri);
+  }
 
   try {
     const accessToken = await exchangeCodeForToken(code, redirectUri);
     const profile = await fetchFacebookProfile(accessToken);
-    const user = await upsertOAuthUser({
+    const user = await persistUser({
       provider: "facebook",
       providerUserId: profile.id,
       name: profile.name,
@@ -55,7 +84,7 @@ export async function GET(req: NextRequest) {
       avatarUrl: profile.avatarUrl,
       sandbox: false,
     });
-    return finishLogin(req, user.id, readSignedOAuthState(state) || "/");
+    return finishLogin(req, user, parsed?.next || "/");
   } catch (e) {
     const message = e instanceof Error ? e.message : "Facebook login failed";
     console.error("[facebook-callback]", message);

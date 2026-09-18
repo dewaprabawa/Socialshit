@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   applySessionCookie,
+  createEphemeralToken,
   createSessionToken,
   ensureSandboxAccounts,
+  persistUser,
   safeNextPath,
-  upsertOAuthUser,
 } from "@/lib/auth";
+import { databaseConfigured } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const name =
     provider === "instagram" ? "Instagram Demo" : "Facebook Demo";
-  const user = await upsertOAuthUser({
+  const user = await persistUser({
     provider,
     providerUserId: `demo-${provider}`,
     name,
@@ -29,11 +31,24 @@ export async function POST(req: NextRequest) {
     avatarUrl: `https://api.dicebear.com/9.x/identicon/svg?seed=${provider}-demo`,
     sandbox: true,
   });
-  await ensureSandboxAccounts(user.id, provider);
+  try {
+    await ensureSandboxAccounts(user.id, provider);
+  } catch {
+    // Publishing still works in sandbox without a database.
+  }
 
-  const { token, expiresAt } = await createSessionToken(user.id);
   const redirect = safeNextPath(body.next);
   const res = NextResponse.json({ ok: true, redirect, user });
+  if (databaseConfigured() && !user.id.startsWith("eph-")) {
+    try {
+      const { token, expiresAt } = await createSessionToken(user.id);
+      applySessionCookie(res, token, expiresAt);
+      return res;
+    } catch {
+      // fall through to cookie session
+    }
+  }
+  const { token, expiresAt } = createEphemeralToken(user);
   applySessionCookie(res, token, expiresAt);
   return res;
 }

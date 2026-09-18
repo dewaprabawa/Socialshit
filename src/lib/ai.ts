@@ -200,7 +200,7 @@ export interface ImageResult {
 // Deterministic, dependency-free placeholder image so the media pipeline can be
 // demonstrated without image-generation credentials.
 function fallbackImage(prompt: string): ImageResult {
-  const seed = encodeURIComponent(prompt.slice(0, 40) || "socialshit");
+  const seed = encodeURIComponent(prompt.slice(0, 40) || "socialhack");
   return {
     url: `https://picsum.photos/seed/${seed}/1080/1080`,
     source: "fallback",
