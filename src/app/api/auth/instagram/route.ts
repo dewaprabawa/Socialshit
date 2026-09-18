@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   applyOAuthStateCookie,
-  createOAuthState,
+  oauthBaseUrl,
   safeNextPath,
   sandboxLogin,
+  signOAuthState,
 } from "@/lib/auth";
 import { instagramLoginUrl, metaConfigured } from "@/lib/meta";
 
@@ -14,10 +15,8 @@ export async function GET(req: NextRequest) {
   if (!metaConfigured()) {
     return sandboxLogin(req, "instagram", next);
   }
-  const state = `${createOAuthState()}.${Buffer.from(next).toString("base64url")}`;
-  const base =
-    process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
-  const redirectUri = `${base}/api/auth/instagram/callback`;
+  const state = signOAuthState(next);
+  const redirectUri = `${oauthBaseUrl(req)}/api/auth/instagram/callback`;
   const res = NextResponse.redirect(instagramLoginUrl(redirectUri, state));
   applyOAuthStateCookie(res, state);
   return res;

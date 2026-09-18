@@ -145,9 +145,11 @@ function facebookDialogUrl(
   return `https://www.facebook.com/${graphVersion()}/dialog/oauth?${params}`;
 }
 
-// Facebook Login — identity only (public profile + email).
+// Facebook Login — identity. public_profile is available without extra App Review.
+// Do not require email: new Meta apps often reject the email scope until it is
+// added under Use cases, which surfaces as a Facebook login error.
 export function facebookLoginUrl(redirectUri: string, state: string): string {
-  return facebookDialogUrl(redirectUri, state, ["public_profile", "email"]);
+  return facebookDialogUrl(redirectUri, state, ["public_profile"]);
 }
 
 // Instagram Login (Instagram API with Instagram Login).
@@ -188,7 +190,7 @@ export async function fetchFacebookProfile(
   accessToken: string
 ): Promise<SocialProfile> {
   const params = new URLSearchParams({
-    fields: "id,name,email,picture.type(large)",
+    fields: "id,name,email,picture",
     access_token: accessToken,
   });
   const res = await fetch(graphUrl(`me?${params.toString()}`));
@@ -295,10 +297,13 @@ export async function exchangeCodeForToken(
   );
   const json = (await res.json()) as {
     access_token?: string;
-    error?: { message?: string };
+    error?: { message?: string; type?: string; code?: number };
+    error_description?: string;
   };
   if (!res.ok || !json.access_token) {
-    throw new Error(json.error?.message || "Failed to exchange code");
+    throw new Error(
+      json.error?.message || json.error_description || "Failed to exchange code"
+    );
   }
   return json.access_token;
 }

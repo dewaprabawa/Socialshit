@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, verifyOAuthState } from "@/lib/auth";
+import { getCurrentUser, oauthBaseUrl, verifyOAuthState } from "@/lib/auth";
 import {
   exchangeCodeForToken,
   graphVersion,
@@ -79,9 +79,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const base =
-    process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
-  const redirectUri = `${base}/api/auth/meta/callback`;
+  const redirectUri = `${oauthBaseUrl(req)}/api/auth/meta/callback`;
 
   try {
     const userToken = await exchangeCodeForToken(code, redirectUri);
