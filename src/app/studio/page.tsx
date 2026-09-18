@@ -43,6 +43,9 @@ export default function StudioPage() {
   const [genLoading, setGenLoading] = useState(false);
   const [ideaLoading, setIdeaLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [canvaLoading, setCanvaLoading] = useState(false);
+  const [canvaEdit, setCanvaEdit] = useState<string | null>(null);
   const [saving, setSaving] = useState<null | "draft" | "publish" | "schedule">(
     null
   );
@@ -144,6 +147,60 @@ export default function StudioPage() {
       setMessage({ type: "err", text: (e as Error).message });
     } finally {
       setImgLoading(false);
+    }
+  }
+
+  async function uploadImage(file: File) {
+    setUploading(true);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setMediaUrl(data.url);
+      setCanvaEdit(null);
+    } catch (e) {
+      setMessage({ type: "err", text: (e as Error).message });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function designWithCanva() {
+    const source = caption || topic;
+    if (!source.trim()) {
+      setMessage({ type: "err", text: "Add a caption or topic first." });
+      return;
+    }
+    setCanvaLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/canva/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caption: source,
+          topic,
+          imageUrl: mediaUrl || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Canva design failed");
+      setMediaUrl(data.imageUrl);
+      setCanvaEdit(data.editUrl || null);
+      setMessage({
+        type: "ok",
+        text:
+          data.source === "canva"
+            ? "Design created in Canva and imported."
+            : "Created a Canva-style design (sandbox). Connect Canva for live designs.",
+      });
+    } catch (e) {
+      setMessage({ type: "err", text: (e as Error).message });
+    } finally {
+      setCanvaLoading(false);
     }
   }
 
@@ -325,6 +382,14 @@ export default function StudioPage() {
             >
               {imgLoading ? "Rendering…" : "Generate image"}
             </button>
+            <button
+              className="btn-ghost"
+              onClick={designWithCanva}
+              disabled={canvaLoading}
+              title="Create an editable design in Canva from your content"
+            >
+              {canvaLoading ? "Designing…" : "Design with Canva"}
+            </button>
           </div>
 
           {ideas.length > 0 && (
@@ -376,12 +441,35 @@ export default function StudioPage() {
           </div>
 
           <div>
-            <label className="label">Image URL</label>
+            <div className="flex items-center justify-between">
+              <label className="label mb-0">Image</label>
+              <label
+                className={`cursor-pointer text-xs font-medium text-brand-400 hover:underline ${
+                  uploading ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {uploading ? "Uploading…" : "Upload a file"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadImage(f);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
             <input
-              className="input"
-              placeholder="https://… or click Generate image"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
+              className="input mt-1"
+              placeholder="Paste an image URL, upload a file, or generate one"
+              value={mediaUrl.startsWith("data:") ? "(generated design)" : mediaUrl}
+              onChange={(e) => {
+                setMediaUrl(e.target.value);
+                setCanvaEdit(null);
+              }}
+              readOnly={mediaUrl.startsWith("data:")}
             />
             {mediaUrl && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -390,6 +478,16 @@ export default function StudioPage() {
                 alt="preview"
                 className="mt-2 h-40 w-full rounded-lg object-cover"
               />
+            )}
+            {canvaEdit && (
+              <a
+                href={canvaEdit}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-flex text-xs font-medium text-brand-400 hover:underline"
+              >
+                Edit this design in Canva ↗
+              </a>
             )}
           </div>
 

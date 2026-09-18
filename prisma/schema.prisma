@@ -21,6 +21,13 @@ model Account {
   posts        Post[]
 }
 
+// Simple key/value store for integration tokens and settings.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 // A piece of content that can be published now or scheduled.
 model Post {
   id           String    @id @default(cuid())

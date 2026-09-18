@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { aiConfigured } from "@/lib/ai";
 import { metaConfigured } from "@/lib/meta";
+import { canvaConfigured, canvaConnected } from "@/lib/canva";
 import { StatusBadge, PlatformBadge } from "@/components/StatusBadge";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ export default async function DashboardPage() {
 
   const ai = aiConfigured();
   const meta = metaConfigured();
+  const canva = canvaConfigured() ? await canvaConnected() : false;
+  const canvaCfg = canvaConfigured();
 
   const stats = [
     { label: "Connected accounts", value: accounts, href: "/accounts" },
@@ -86,6 +89,22 @@ export default async function DashboardPage() {
                 }`}
               >
                 {meta ? "Connected" : "Sandbox mode"}
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Canva (design content)</span>
+              <span
+                className={`badge ${
+                  canva
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "bg-amber-500/20 text-amber-300"
+                }`}
+              >
+                {canva
+                  ? "Connected"
+                  : canvaCfg
+                  ? "Not connected"
+                  : "Sandbox mode"}
               </span>
             </li>
           </ul>

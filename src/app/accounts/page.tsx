@@ -20,14 +20,21 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [canva, setCanva] = useState<{ configured: boolean; connected: boolean }>(
+    { configured: false, connected: false }
+  );
   const [message, setMessage] = useState<{
     type: "ok" | "err";
     text: string;
   } | null>(null);
 
   const load = useCallback(async () => {
-    const a = await fetch("/api/accounts").then((r) => r.json());
+    const [a, c] = await Promise.all([
+      fetch("/api/accounts").then((r) => r.json()),
+      fetch("/api/config").then((r) => r.json()),
+    ]);
     setAccounts(a.accounts || []);
+    setCanva(c.canva || { configured: false, connected: false });
     setLoading(false);
   }, []);
 
@@ -41,9 +48,23 @@ export default function AccountsPage() {
       });
     } else if (params.get("error")) {
       setMessage({ type: "err", text: `Meta error: ${params.get("error")}` });
+    } else if (params.get("canva") === "connected") {
+      setMessage({ type: "ok", text: "Canva connected." });
+    } else if (params.get("canvaError")) {
+      setMessage({
+        type: "err",
+        text: `Canva error: ${params.get("canvaError")}`,
+      });
     }
     load();
   }, [load]);
+
+  async function disconnectCanva() {
+    setBusy("canva");
+    await fetch("/api/canva/disconnect", { method: "POST" });
+    setBusy(null);
+    load();
+  }
 
   async function remove(id: string) {
     setBusy(id);
@@ -132,6 +153,58 @@ export default function AccountsPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div>
+        <h2 className="mb-3 font-semibold">Design tools</h2>
+        <div className="card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 font-black text-white">
+              C
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Canva</span>
+                <span
+                  className={`badge ${
+                    canva.connected
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-amber-500/20 text-amber-300"
+                  }`}
+                >
+                  {canva.connected
+                    ? "Connected"
+                    : canva.configured
+                    ? "Not connected"
+                    : "Sandbox mode"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Generate and edit editable post designs in Canva.
+              </p>
+            </div>
+          </div>
+          <div>
+            {canva.connected ? (
+              <button
+                className="btn-ghost"
+                onClick={disconnectCanva}
+                disabled={busy === "canva"}
+              >
+                {busy === "canva" ? "…" : "Disconnect"}
+              </button>
+            ) : canva.configured ? (
+              <a href="/api/auth/canva" className="btn-primary">
+                Connect Canva
+              </a>
+            ) : (
+              <span className="text-xs text-amber-400/80">
+                Set CANVA_CLIENT_ID &amp; CANVA_CLIENT_SECRET to connect. Sandbox
+                designs work now.
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       <ConnectWizard
