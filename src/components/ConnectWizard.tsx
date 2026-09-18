@@ -29,6 +29,7 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
   const [created, setCreated] = useState<{ name: string; sandbox: boolean } | null>(
     null
   );
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -46,6 +47,7 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
       .then((r) => r.json())
       .then((d) => setMetaReady(Boolean(d.meta)))
       .catch(() => setMetaReady(false));
+    setOrigin(window.location.origin.replace(/\/$/, ""));
   }, [open]);
 
   if (!open) return null;
@@ -308,6 +310,15 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                     account automatically.
                   </li>
                 </ol>
+                <p className="mt-3 text-xs text-amber-200/90">
+                  If Facebook says the redirect URI is not registered, add this
+                  exact URI under Facebook Login → Valid OAuth Redirect URIs:
+                </p>
+                <code className="mt-1 block break-all rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs text-slate-200">
+                  {origin
+                    ? `${origin}/api/auth/meta/callback`
+                    : "/api/auth/meta/callback"}
+                </code>
               </div>
               <div className="flex justify-between">
                 <button onClick={() => setStep(1)} className="btn-ghost">
