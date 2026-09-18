@@ -3,6 +3,7 @@
 import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MetaSetupGuide } from "@/components/MetaSetupGuide";
+import { friendlyMetaOAuthError } from "@/lib/meta-oauth-error";
 
 type Provider = "facebook" | "instagram";
 
@@ -36,17 +37,9 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
   const errorText = useMemo(() => {
     if (!error) return null;
-    const decoded = error.replace(/\+/g, " ");
-    if (decoded === "access_denied" || decoded === "user_denied") {
-      return "Facebook login was cancelled. Try Continue with Facebook again.";
-    }
-    if (decoded.toLowerCase().includes("invalid scope")) {
-      return "This Meta app has not enabled the requested Facebook permission. In Use cases → Authentication, add public_profile, then retry.";
-    }
-    if (decoded.toLowerCase().includes("redirect_uri")) {
-      return `${decoded} Add http://localhost:3000/api/auth/facebook/callback to Valid OAuth Redirect URIs.`;
-    }
-    return decoded;
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    return friendlyMetaOAuthError(error, origin);
   }, [error]);
   const facebookHref = `/api/auth/facebook?next=${encodeURIComponent(next)}`;
   const instagramHref = `/api/auth/instagram?next=${encodeURIComponent(next)}`;
@@ -62,8 +55,9 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
             Sign in to Socialshit
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Continue with Facebook or Instagram to generate, schedule, and
-            publish content.
+            Continue with Facebook signs you in with a personal account.
+            Continue with Instagram uses Instagram API with Instagram Login —
+            Meta&apos;s business publishing API. No Business Manager required.
           </p>
         </div>
 
@@ -76,7 +70,9 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
           {metaReady && (
             <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-              Meta app connected. Continue with Facebook now opens Facebook Login.
+              Meta app connected. Facebook Login is personal (
+              <code>public_profile</code>). Instagram Login is the business
+              publishing API (Professional IG, no Business Manager).
             </div>
           )}
 
