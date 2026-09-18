@@ -58,12 +58,19 @@ export default function StudioPage() {
 
   useEffect(() => {
     fetch("/api/accounts")
-      .then((r) => r.json())
-      .then((d) => {
+      .then((r) => r.text())
+      .then((text) => {
+        if (!text) return;
+        const d = JSON.parse(text) as { accounts?: Account[] };
         setAccounts(d.accounts || []);
         if (d.accounts?.length) {
           setAccountId(d.accounts[0].id);
-          setPlatform(d.accounts[0].platform);
+          if (
+            d.accounts[0].platform === "facebook" ||
+            d.accounts[0].platform === "instagram"
+          ) {
+            setPlatform(d.accounts[0].platform);
+          }
         }
       })
       .catch(() => {});

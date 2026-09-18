@@ -200,6 +200,24 @@ export async function finishLogin(
   return res;
 }
 
+export async function sandboxLogin(
+  req: NextRequest,
+  provider: "facebook" | "instagram",
+  nextPath?: string | null
+) {
+  const name = provider === "instagram" ? "Instagram Demo" : "Facebook Demo";
+  const user = await upsertOAuthUser({
+    provider,
+    providerUserId: `demo-${provider}`,
+    name,
+    email: null,
+    avatarUrl: `https://api.dicebear.com/9.x/identicon/svg?seed=${provider}-demo`,
+    sandbox: true,
+  });
+  await ensureSandboxAccounts(user.id, provider);
+  return finishLogin(req, user.id, nextPath);
+}
+
 export async function ensureSandboxAccounts(
   userId: string,
   provider: "facebook" | "instagram"

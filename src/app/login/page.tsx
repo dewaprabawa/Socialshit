@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { parseJson } from "@/lib/parse-json";
 
 type Provider = "facebook" | "instagram";
 
@@ -32,45 +33,18 @@ function LoginForm() {
   const next = params.get("next") || "/";
   const error = params.get("error");
   const [busy, setBusy] = useState<Provider | null>(null);
-  const [localError, setLocalError] = useState<string | null>(null);
   const [sandboxLogin, setSandboxLogin] = useState(true);
 
   useEffect(() => {
     fetch("/api/config")
-      .then((r) => r.json())
+      .then((r) => parseJson<{ meta?: boolean }>(r))
       .then((d) => setSandboxLogin(!d.meta))
       .catch(() => setSandboxLogin(true));
   }, []);
 
-  const errorText = useMemo(() => {
-    if (localError) return localError;
-    if (!error) return null;
-    return error;
-  }, [error, localError]);
-
-  async function start(provider: Provider) {
-    setBusy(provider);
-    setLocalError(null);
-    try {
-      const cfg = await fetch("/api/config").then((r) => r.json());
-      if (cfg.meta) {
-        const url = `/api/auth/${provider}?next=${encodeURIComponent(next)}`;
-        window.location.href = url;
-        return;
-      }
-      const res = await fetch("/api/auth/demo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, next }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
-      window.location.href = data.redirect || "/";
-    } catch (e) {
-      setLocalError((e as Error).message);
-      setBusy(null);
-    }
-  }
+  const errorText = useMemo(() => (error ? error : null), [error]);
+  const facebookHref = `/api/auth/facebook?next=${encodeURIComponent(next)}`;
+  const instagramHref = `/api/auth/instagram?next=${encodeURIComponent(next)}`;
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center">
@@ -94,25 +68,23 @@ function LoginForm() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => start("facebook")}
-          disabled={Boolean(busy)}
+        <a
+          href={facebookHref}
+          onClick={() => setBusy("facebook")}
           className="btn w-full bg-[#1877F2] text-white hover:bg-[#166fe5]"
         >
           <FacebookIcon />
           {busy === "facebook" ? "Signing in…" : "Continue with Facebook"}
-        </button>
+        </a>
 
-        <button
-          type="button"
-          onClick={() => start("instagram")}
-          disabled={Boolean(busy)}
+        <a
+          href={instagramHref}
+          onClick={() => setBusy("instagram")}
           className="btn w-full bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white hover:opacity-95"
         >
           <InstagramIcon />
           {busy === "instagram" ? "Signing in…" : "Continue with Instagram"}
-        </button>
+        </a>
 
         <p className="pt-1 text-center text-xs text-slate-500">
           {sandboxLogin
