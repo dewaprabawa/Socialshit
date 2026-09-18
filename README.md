@@ -1,4 +1,4 @@
-# Socialshit
+# SocialHack
 
 A marketing tool for **Instagram** and **Facebook** that can:
 
@@ -48,9 +48,9 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 
 ## Deploying to Vercel
 
-The GitHub repo is named `Socialshit`. Vercel **project names cannot have uppercase letters**, so the import form will fail if you leave the default name.
+The product name is **SocialHack**. The GitHub repo may still be named `Socialshit` / `socialshit-dev-1`. Vercel **project names cannot have uppercase letters**, so the import form will fail if you leave a mixed-case default.
 
-**On the Vercel import screen, change Project Name from `Socialshit` to `socialshit`, then click Deploy.**
+**On the Vercel import screen, use project name `socialshit` (or `socialhack`), then click Deploy.**
 
 Allowed characters: lowercase letters, digits, `.`, `_`, `-` (max 100). `package.json` and `vercel.json` already use `socialshit`.
 
@@ -65,7 +65,7 @@ CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
 
 ## How Meta’s business APIs work
 
-Meta ships several APIs. Socialshit uses them separately so a personal Facebook account does **not** have to join Business Manager.
+Meta ships several APIs. SocialHack uses them separately so a personal Facebook account does **not** have to join Business Manager.
 
 ### 1. Instagram API with Instagram Login (recommended business API)
 

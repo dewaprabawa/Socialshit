@@ -2,7 +2,7 @@
   "name": "socialshit",
   "version": "0.1.0",
   "private": true,
-  "description": "Marketing tool for Instagram & Facebook: auto-generate content and captions, connect business accounts, and auto-publish or schedule posts.",
+  "description": "SocialHack — marketing tool for Instagram & Facebook: auto-generate content and captions, connect business accounts, and auto-publish or schedule posts.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

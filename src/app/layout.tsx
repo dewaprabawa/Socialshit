@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { APP_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Socialshit — Instagram & Facebook Marketing",
+  title: `${APP_NAME} — Instagram & Facebook Marketing`,
   description:
     "Auto-generate content and captions, connect business accounts, and auto-publish or schedule to Instagram and Facebook.",
 };

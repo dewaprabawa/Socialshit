@@ -168,7 +168,7 @@ async function uploadAssetFromUrl(
     if (!imgRes.ok) return null;
     const bytes = Buffer.from(await imgRes.arrayBuffer());
     const meta = Buffer.from(
-      JSON.stringify({ name_base64: Buffer.from("socialshit").toString("base64") })
+      JSON.stringify({ name_base64: Buffer.from("socialhack").toString("base64") })
     ).toString("base64");
 
     const res = await fetch(`${API}/asset-uploads`, {
@@ -206,7 +206,7 @@ async function createDesignReal(
   const assetId = imageUrl ? await uploadAssetFromUrl(token, imageUrl) : null;
   const body: Record<string, unknown> = {
     design_type: { type: "custom", width: 1080, height: 1080 },
-    title: caption.slice(0, 50) || "Socialshit post",
+    title: caption.slice(0, 50) || "SocialHack post",
   };
   if (assetId) body.asset_id = assetId;
 
@@ -298,7 +298,7 @@ export function sandboxDesignImage(caption: string): string {
   <rect width="1080" height="1080" fill="url(#g)"/>
   <circle cx="900" cy="180" r="230" fill="#ffffff" opacity="0.08"/>
   <circle cx="180" cy="920" r="180" fill="#ffffff" opacity="0.08"/>
-  <text x="90" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="34" fill="#ffffff" opacity="0.85" font-weight="700">SOCIALSHIT</text>
+  <text x="90" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="34" fill="#ffffff" opacity="0.85" font-weight="700">SOCIALHACK</text>
   <text x="90" y="470" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="800" fill="#ffffff">${tspans}</text>
   <text x="90" y="1000" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="#ffffff" opacity="0.8">Designed with Canva (sandbox)</text>
 </svg>`;

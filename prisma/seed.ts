@@ -24,8 +24,8 @@ async function main() {
     data: {
       userId: fbUser.id,
       platform: "instagram",
-      name: "Socialshit Demo (IG)",
-      handle: "@socialshit.demo",
+      name: "SocialHack Demo (IG)",
+      handle: "@socialhack.demo",
       externalId: "sandbox-ig-1",
       accessToken: "sandbox",
       sandbox: true,
@@ -38,8 +38,8 @@ async function main() {
     data: {
       userId: fbUser.id,
       platform: "facebook",
-      name: "Socialshit Demo Page",
-      handle: "Socialshit Demo Page",
+      name: "SocialHack Demo Page",
+      handle: "SocialHack Demo Page",
       externalId: "sandbox-fb-1",
       accessToken: "sandbox",
       sandbox: true,

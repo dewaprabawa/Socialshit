@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { APP_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Socialshit",
+  title: `Privacy Policy — ${APP_NAME}`,
   description:
-    "How Socialshit collects, uses, and shares information when you sign in with Facebook or Instagram and publish marketing content.",
+    `How ${APP_NAME} collects, uses, and shares information when you sign in with Facebook or Instagram and publish marketing content.`,
 };
 
 const EFFECTIVE = "18 September 2026";
@@ -42,13 +43,13 @@ export default function PrivacyPage() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 font-black text-white">
             S
           </span>
-          <span className="text-lg font-bold tracking-tight">Socialshit</span>
+          <span className="text-lg font-bold tracking-tight">{APP_NAME}</span>
         </Link>
         <p className="text-xs uppercase tracking-wide text-slate-500">Legal</p>
         <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
         <p className="text-sm text-slate-400">
-          Effective date: {EFFECTIVE}. This policy describes how the Socialshit
-          marketing app (“Socialshit”, “we”, “us”) handles information when you
+          Effective date: {EFFECTIVE}. This policy describes how the SocialHack
+          marketing app (“SocialHack”, “we”, “us”) handles information when you
           visit the site, sign in with Facebook or Instagram, connect business
           accounts, generate content, or publish and schedule posts.
         </p>
@@ -120,7 +121,7 @@ export default function PrivacyPage() {
 
       <Section id="who-we-are" title="1. Who we are">
         <p>
-          Socialshit is a web app that helps you generate marketing content,
+          SocialHack is a web app that helps you generate marketing content,
           connect Facebook Pages and Instagram Business accounts, and publish or
           schedule posts. The service is operated by the person or organization
           that deployed this instance (the GitHub project is{" "}
@@ -135,7 +136,7 @@ export default function PrivacyPage() {
           ).
         </p>
         <p>
-          This policy applies to this hosted Socialshit instance, including
+          This policy applies to this hosted SocialHack instance, including
           local development (for example <code>http://localhost:3000</code>) and
           production hosts such as{" "}
           <code>https://socialshit-dev-1.vercel.app</code>.
@@ -278,10 +279,10 @@ export default function PrivacyPage() {
 
       <Section id="meta-platform" title="5. Facebook and Instagram platform">
         <p>
-          Socialshit is an independent app that uses Facebook Login, Instagram
+          SocialHack is an independent app that uses Facebook Login, Instagram
           API with Instagram Login, and the Graph API. Instagram publishing
           through Instagram Login does not require a Facebook Page or a Meta
-          Business portfolio. Socialshit is not affiliated with Meta beyond those
+          Business portfolio. SocialHack is not affiliated with Meta beyond those
           APIs.
         </p>
         <p>Permissions this instance may request:</p>
@@ -300,7 +301,7 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p>
-          You can remove Socialshit from your Facebook account at any time
+          You can remove SocialHack from your Facebook account at any time
           under Facebook Settings → Apps and websites. That stops future
           Graph API access from this app; it does not automatically delete
           posts already published on your Page or Instagram account.
@@ -347,7 +348,7 @@ export default function PrivacyPage() {
           data this instance stores about you, subject to applicable law
           (including GDPR-style rights where they apply).
         </p>
-        <p className="font-medium text-slate-100">To delete your Socialshit data:</p>
+        <p className="font-medium text-slate-100">To delete your SocialHack data:</p>
         <ol className="list-decimal space-y-2 pl-5">
           <li>
             In this app, log out (clears the session cookie and the hashed
@@ -358,7 +359,7 @@ export default function PrivacyPage() {
             page if they are still listed.
           </li>
           <li>
-            On Facebook, open Settings → Apps and websites, find Socialshit (or
+            On Facebook, open Settings → Apps and websites, find SocialHack (or
             the Meta app name shown during login), and remove it.
           </li>
           <li>
@@ -385,7 +386,7 @@ export default function PrivacyPage() {
 
       <Section id="children" title="9. Children">
         <p>
-          Socialshit is not directed at children under 13, and you must meet
+          SocialHack is not directed at children under 13, and you must meet
           Facebook’s and Instagram’s minimum age to use those logins. We do
           not knowingly collect personal information from children under 13. If
           you believe we have, contact us and we will delete it.

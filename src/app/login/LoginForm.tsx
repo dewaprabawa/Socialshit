@@ -4,6 +4,7 @@ import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MetaSetupGuide } from "@/components/MetaSetupGuide";
 import { friendlyMetaOAuthError } from "@/lib/meta-oauth-error";
+import { APP_NAME } from "@/lib/brand";
 
 type Provider = "facebook" | "instagram";
 
@@ -52,7 +53,7 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
             S
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight">
-            Sign in to Socialshit
+            Sign in to {APP_NAME}
           </h1>
           <p className="mt-2 text-sm text-slate-400">
             Continue with Facebook signs you in with a personal account.
@@ -96,7 +97,7 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
           <p className="pt-1 text-center text-xs text-slate-500">
             {metaReady
-              ? "You’ll be redirected to Facebook or Instagram to authorize Socialshit."
+              ? `You’ll be redirected to Facebook or Instagram to authorize ${APP_NAME}.`
               : "Meta app keys are not set — these buttons create a sandbox session so you can try the full marketing flow."}{" "}
             By continuing, you agree to our{" "}
             <a href="/privacy" className="text-slate-300 hover:underline">

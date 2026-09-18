@@ -8,7 +8,7 @@ const url =
 
 if (!url || url.startsWith("file:")) {
   console.warn(
-    "[socialshit] No PostgreSQL DATABASE_URL — skipping migrations. Add a Vercel Postgres / Neon database, then redeploy."
+    "[socialhack] No PostgreSQL DATABASE_URL — skipping migrations. Add a Vercel Postgres / Neon database, then redeploy."
   );
   process.exit(0);
 }

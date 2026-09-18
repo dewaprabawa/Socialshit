@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { APP_NAME } from "@/lib/brand";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -53,7 +54,7 @@ export function Nav() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 font-black text-white">
             S
           </span>
-          <span className="text-lg font-bold tracking-tight">Socialshit</span>
+          <span className="text-lg font-bold tracking-tight">{APP_NAME}</span>
         </Link>
         <nav className="flex items-center gap-1">
           {links.map((l) => {
