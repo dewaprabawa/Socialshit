@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   finishLogin,
   oauthBaseUrl,
+  persistUser,
   readSignedOAuthState,
-  upsertOAuthUser,
   verifyOAuthState,
 } from "@/lib/auth";
 import {
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
   try {
     const accessToken = await exchangeCodeForToken(code, redirectUri);
     const profile = await fetchFacebookProfile(accessToken);
-    const user = await upsertOAuthUser({
+    const user = await persistUser({
       provider: "facebook",
       providerUserId: profile.id,
       name: profile.name,
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       avatarUrl: profile.avatarUrl,
       sandbox: false,
     });
-    return finishLogin(req, user.id, readSignedOAuthState(state) || "/");
+    return finishLogin(req, user, readSignedOAuthState(state) || "/");
   } catch (e) {
     const message = e instanceof Error ? e.message : "Facebook login failed";
     console.error("[facebook-callback]", message);

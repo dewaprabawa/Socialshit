@@ -58,7 +58,7 @@ Then:
 1. **Add a Postgres database** — Vercel Storage → Postgres (or Neon) and set `DATABASE_URL`. The build runs `prisma migrate deploy` via `vercel-build`.
 2. **Enable uploads (optional)** — add a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`).
 3. **Scheduler** — `vercel.json` hits `/api/scheduler/tick` once a day (Hobby-plan limit). Upgrade Vercel or call that endpoint yourself for more frequent publishes.
-4. **Optional** — `OPENAI_API_KEY`, `META_APP_ID`/`META_APP_SECRET`, `CANVA_CLIENT_ID`/`CANVA_CLIENT_SECRET`.
+4. **Facebook / Instagram Login** — set `META_APP_ID`, `META_APP_SECRET`, and `APP_BASE_URL=https://your-app.vercel.app`, then Redeploy. Add `https://your-app.vercel.app/api/auth/facebook/callback` (and the Instagram + Meta callbacks) under Valid OAuth Redirect URIs. Without Meta keys, Continue with Facebook uses a sandbox session (no 500). Without `DATABASE_URL`, login is stored in a signed cookie so the button still works.
 
 CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
 

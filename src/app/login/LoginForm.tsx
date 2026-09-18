@@ -44,7 +44,18 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
       return "This Meta app has not enabled the requested Facebook permission. In Use cases → Authentication, add public_profile, then retry.";
     }
     if (decoded.toLowerCase().includes("redirect_uri")) {
-      return `${decoded} Add http://localhost:3000/api/auth/facebook/callback to Valid OAuth Redirect URIs.`;
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      return `${decoded} Add ${origin}/api/auth/facebook/callback to Valid OAuth Redirect URIs in the Meta app.`;
+    }
+    if (decoded.toLowerCase().includes("meta app is not configured")) {
+      return "Meta app keys are not set on this host. In Vercel → Settings → Environment Variables add META_APP_ID, META_APP_SECRET, and APP_BASE_URL, then Redeploy.";
+    }
+    if (
+      decoded.toLowerCase().includes("database") ||
+      decoded.includes("DATABASE_URL")
+    ) {
+      return "This host has no Postgres URL, so a database session could not be saved. Add DATABASE_URL on Vercel (or META_APP_ID / META_APP_SECRET for Facebook Login).";
     }
     return decoded;
   }, [error]);

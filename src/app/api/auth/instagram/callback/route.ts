@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   finishLogin,
   oauthBaseUrl,
+  persistUser,
   readSignedOAuthState,
-  upsertOAuthUser,
   verifyOAuthState,
 } from "@/lib/auth";
 import {
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         avatarUrl: null,
       };
     }
-    const user = await upsertOAuthUser({
+    const user = await persistUser({
       provider: "instagram",
       providerUserId: profile.id || userId,
       name: profile.name,
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       avatarUrl: profile.avatarUrl,
       sandbox: false,
     });
-    return finishLogin(req, user.id, readSignedOAuthState(state) || "/");
+    return finishLogin(req, user, readSignedOAuthState(state) || "/");
   } catch (e) {
     const message = e instanceof Error ? e.message : "Instagram login failed";
     console.error("[instagram-callback]", message);
