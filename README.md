@@ -45,10 +45,17 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 
 ## Deploying to Vercel
 
-- **Project name:** Vercel project names must be lowercase (letters, digits, `.`, `_`, `-`). Use something like `socialshit` when importing — the repo name `Socialshit` (capital `S`) is rejected. The `name` in `package.json` is already valid.
-- **Database:** this app uses SQLite (a local file), which does not persist on Vercel's serverless filesystem. For Vercel, switch Prisma to a hosted database (e.g. Vercel Postgres / Neon) by changing the `datasource` provider and `DATABASE_URL`.
-- **Uploads:** `/api/upload` writes to `public/uploads`, which is read-only on Vercel. Use a blob store (e.g. Vercel Blob or S3) in production.
-- **Scheduler:** the in-process scheduler won't run on serverless. Configure a Vercel Cron to call `POST /api/scheduler/tick` on a schedule instead.
+The app is Vercel-ready: it uses **PostgreSQL** (via Prisma), a **Vercel Cron** for the scheduler (`vercel.json`), and **Vercel Blob** for uploads when configured.
+
+Steps:
+
+1. **Import the repo** in Vercel and set the **Project Name** to something lowercase such as `socialshit` (Vercel rejects the capitalized repo name `Socialshit`).
+2. **Add a Postgres database** — create a Vercel Postgres or Neon database and set `DATABASE_URL` in the project's Environment Variables. The build runs `prisma migrate deploy` automatically (`vercel-build` script), creating the schema on first deploy.
+3. **Enable uploads (optional)** — add a Vercel Blob store; it sets `BLOB_READ_WRITE_TOKEN` so `/api/upload` stores files in Blob. Without it, uploads only work locally.
+4. **Scheduler** — `vercel.json` registers a cron hitting `/api/scheduler/tick` every 5 minutes (adjust to your plan's limits).
+5. **Optional integrations** — add `OPENAI_API_KEY`, `META_APP_ID`/`META_APP_SECRET`, and `CANVA_CLIENT_ID`/`CANVA_CLIENT_SECRET` to enable live AI, publishing, and Canva.
+
+To deploy from the CLI instead: `vercel link`, set the env vars above, then `vercel --prod`.
 
 ## How it works
 
