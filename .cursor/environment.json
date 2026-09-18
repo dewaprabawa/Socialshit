@@ -1,0 +1,10 @@
+{
+  "name": "Socialshit",
+  "install": "./.cursor/install.sh",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev"
+    }
+  ]
+}
