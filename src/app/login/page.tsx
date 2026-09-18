@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { parseJson } from "@/lib/parse-json";
+import { MetaSetupGuide } from "@/components/MetaSetupGuide";
 
 type Provider = "facebook" | "instagram";
 
@@ -47,51 +48,54 @@ function LoginForm() {
   const instagramHref = `/api/auth/instagram?next=${encodeURIComponent(next)}`;
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center">
-      <div className="mb-8 text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 text-2xl font-black text-white">
-          S
-        </div>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight">
-          Sign in to Socialshit
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Continue with Facebook or Instagram to generate, schedule, and publish
-          content.
-        </p>
-      </div>
-
-      <div className="card space-y-3">
-        {errorText && (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {errorText}
+    <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col justify-center gap-6">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-pink-500 text-2xl font-black text-white">
+            S
           </div>
-        )}
+          <h1 className="mt-4 text-3xl font-bold tracking-tight">
+            Sign in to Socialshit
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            Continue with Facebook or Instagram to generate, schedule, and
+            publish content.
+          </p>
+        </div>
 
-        <a
-          href={facebookHref}
-          onClick={() => setBusy("facebook")}
-          className="btn w-full bg-[#1877F2] text-white hover:bg-[#166fe5]"
-        >
-          <FacebookIcon />
-          {busy === "facebook" ? "Signing in…" : "Continue with Facebook"}
-        </a>
+        <div className="card space-y-3">
+          {errorText && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {errorText}
+            </div>
+          )}
 
-        <a
-          href={instagramHref}
-          onClick={() => setBusy("instagram")}
-          className="btn w-full bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white hover:opacity-95"
-        >
-          <InstagramIcon />
-          {busy === "instagram" ? "Signing in…" : "Continue with Instagram"}
-        </a>
+          <a
+            href={facebookHref}
+            onClick={() => setBusy("facebook")}
+            className="btn w-full bg-[#1877F2] text-white hover:bg-[#166fe5]"
+          >
+            <FacebookIcon />
+            {busy === "facebook" ? "Signing in…" : "Continue with Facebook"}
+          </a>
 
-        <p className="pt-1 text-center text-xs text-slate-500">
-          {sandboxLogin
-            ? "Meta app keys are not set — these buttons create a sandbox session so you can try the full marketing flow."
-            : "You’ll be redirected to Facebook or Instagram to authorize Socialshit."}
-        </p>
+          <a
+            href={instagramHref}
+            onClick={() => setBusy("instagram")}
+            className="btn w-full bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white hover:opacity-95"
+          >
+            <InstagramIcon />
+            {busy === "instagram" ? "Signing in…" : "Continue with Instagram"}
+          </a>
+
+          <p className="pt-1 text-center text-xs text-slate-500">
+            {sandboxLogin
+              ? "Meta app keys are not set — these buttons create a sandbox session so you can try the full marketing flow."
+              : "You’ll be redirected to Facebook or Instagram to authorize Socialshit."}
+          </p>
+        </div>
       </div>
+      {sandboxLogin && <MetaSetupGuide />}
     </div>
   );
 }

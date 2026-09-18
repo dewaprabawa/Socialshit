@@ -61,6 +61,51 @@ Then:
 
 CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
 
+## Connect Facebook Developer (real login)
+
+Until `META_APP_ID` and `META_APP_SECRET` are set, **Continue with Facebook / Instagram** creates a sandbox session. To use real Facebook Login and Instagram Login:
+
+1. Open [Meta for Developers](https://developers.facebook.com/apps/) and create an app (Business, or the “Authenticate and request data from users with Facebook Login” use case).
+2. Add **Facebook Login**. In the current dashboard: **Use cases → Authentication and Account Creation → Customize → Go to settings**.
+3. Enable **Client OAuth login** and **Web OAuth login**. Add these **Valid OAuth Redirect URIs** (no trailing slash):
+
+```
+{APP_BASE_URL}/api/auth/facebook/callback
+{APP_BASE_URL}/api/auth/instagram/callback
+{APP_BASE_URL}/api/auth/meta/callback
+```
+
+Examples:
+
+```
+http://localhost:3000/api/auth/facebook/callback
+http://localhost:3000/api/auth/instagram/callback
+http://localhost:3000/api/auth/meta/callback
+```
+
+4. For Instagram Login, add the **Instagram** product → **API setup with Instagram login**, and paste the Instagram callback. The Instagram account must be Professional (Business or Creator).
+5. **App settings → Basic**: copy App ID and App Secret into `.env` (local) or Vercel **Environment Variables** (production):
+
+```
+META_APP_ID=...
+META_APP_SECRET=...
+APP_BASE_URL=http://localhost:3000
+```
+
+On Vercel, `APP_BASE_URL` must be your public HTTPS origin, for example `https://socialshit-dev-1.vercel.app`. Redeploy after saving.
+
+6. Add `localhost` (and your production domain) under **App domains**.
+7. Development-mode apps only allow **Admins / Developers / Testers**. Add yourself under **App roles**.
+8. Restart `npm run dev` (or wait for the Vercel redeploy). Reload `/login` — the sandbox note should disappear. Click **Continue with Facebook**.
+9. After you are signed in, go to **Accounts → Add integration → Connect with Meta** to attach Facebook Pages and linked Instagram Business accounts for publishing.
+
+Permissions this app requests:
+
+- Login: `public_profile`, `email` (Facebook) and `instagram_business_basic`, `instagram_business_content_publish` (Instagram).
+- Publishing (Connect with Meta): `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `business_management`.
+
+Going **Live** later requires a privacy policy URL and Meta App Review for those publishing permissions. Testers can use the app while it stays in Development.
+
 ## How it works
 
 - **Content Studio** (`/studio`) — enter a topic, brand, audience, tone, and
