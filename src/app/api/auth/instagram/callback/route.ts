@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   finishLogin,
+  oauthBaseUrl,
+  readSignedOAuthState,
   upsertOAuthUser,
   verifyOAuthState,
 } from "@/lib/auth";
@@ -11,17 +13,6 @@ import {
 } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
-
-function nextFromState(state: string | null): string {
-  const encoded = state?.split(".")[1];
-  if (!encoded) return "/";
-  try {
-    const next = Buffer.from(encoded, "base64url").toString("utf8");
-    return next.startsWith("/") ? next : "/";
-  } catch {
-    return "/";
-  }
-}
 
 export async function GET(req: NextRequest) {
   if (!metaConfigured()) {
@@ -50,9 +41,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const base =
-    process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
-  const redirectUri = `${base}/api/auth/instagram/callback`;
+  const redirectUri = `${oauthBaseUrl(req)}/api/auth/instagram/callback`;
 
   try {
     const { accessToken, userId } = await exchangeInstagramCodeForToken(
@@ -78,9 +67,10 @@ export async function GET(req: NextRequest) {
       avatarUrl: profile.avatarUrl,
       sandbox: false,
     });
-    return finishLogin(req, user.id, nextFromState(state));
+    return finishLogin(req, user.id, readSignedOAuthState(state) || "/");
   } catch (e) {
     const message = e instanceof Error ? e.message : "Instagram login failed";
+    console.error("[instagram-callback]", message);
     return NextResponse.redirect(
       new URL(`/login?error=${encodeURIComponent(message)}`, req.url)
     );

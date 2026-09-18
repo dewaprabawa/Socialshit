@@ -39,7 +39,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (session && pathname === "/login") {
+  if (session && pathname === "/login" && !req.nextUrl.searchParams.get("error")) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

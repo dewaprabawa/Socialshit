@@ -34,7 +34,20 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
   const error = params.get("error");
   const [busy, setBusy] = useState<Provider | null>(null);
 
-  const errorText = useMemo(() => (error ? error : null), [error]);
+  const errorText = useMemo(() => {
+    if (!error) return null;
+    const decoded = error.replace(/\+/g, " ");
+    if (decoded === "access_denied" || decoded === "user_denied") {
+      return "Facebook login was cancelled. Try Continue with Facebook again.";
+    }
+    if (decoded.toLowerCase().includes("invalid scope")) {
+      return "This Meta app has not enabled the requested Facebook permission. In Use cases → Authentication, add public_profile, then retry.";
+    }
+    if (decoded.toLowerCase().includes("redirect_uri")) {
+      return `${decoded} Add http://localhost:3000/api/auth/facebook/callback to Valid OAuth Redirect URIs.`;
+    }
+    return decoded;
+  }, [error]);
   const facebookHref = `/api/auth/facebook?next=${encodeURIComponent(next)}`;
   const instagramHref = `/api/auth/instagram?next=${encodeURIComponent(next)}`;
 

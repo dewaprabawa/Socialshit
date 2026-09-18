@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   applyOAuthStateCookie,
-  createOAuthState,
   getCurrentUser,
+  oauthBaseUrl,
+  signOAuthState,
 } from "@/lib/auth";
 import { metaConfigured, oauthLoginUrl } from "@/lib/meta";
 
@@ -22,10 +23,8 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
-  const base =
-    process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
-  const redirectUri = `${base}/api/auth/meta/callback`;
-  const state = `${createOAuthState()}.${user.id}`;
+  const redirectUri = `${oauthBaseUrl(req)}/api/auth/meta/callback`;
+  const state = signOAuthState("/accounts");
   const res = NextResponse.redirect(oauthLoginUrl(redirectUri, state));
   applyOAuthStateCookie(res, state);
   return res;

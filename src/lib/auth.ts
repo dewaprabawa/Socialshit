@@ -41,6 +41,50 @@ export function createOAuthState(): string {
   return crypto.randomBytes(16).toString("hex");
 }
 
+function oauthSigningSecret(): string {
+  return process.env.META_APP_SECRET || process.env.APP_BASE_URL || "socialshit-oauth";
+}
+
+export function signOAuthState(nextPath: string): string {
+  const payload = Buffer.from(
+    JSON.stringify({
+      n: safeNextPath(nextPath),
+      t: Date.now(),
+      r: crypto.randomBytes(8).toString("hex"),
+    })
+  ).toString("base64url");
+  const sig = crypto
+    .createHmac("sha256", oauthSigningSecret())
+    .update(payload)
+    .digest("base64url");
+  return `${payload}.${sig}`;
+}
+
+export function readSignedOAuthState(state: string | null): string | null {
+  if (!state) return null;
+  const i = state.lastIndexOf(".");
+  if (i <= 0) return null;
+  const payload = state.slice(0, i);
+  const sig = state.slice(i + 1);
+  const expected = crypto
+    .createHmac("sha256", oauthSigningSecret())
+    .update(payload)
+    .digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      n?: string;
+      t?: number;
+    };
+    if (!data.t || Date.now() - data.t > 10 * 60 * 1000) return null;
+    return safeNextPath(data.n);
+  } catch {
+    return null;
+  }
+}
+
 export function applyOAuthStateCookie(res: NextResponse, state: string) {
   res.cookies.set(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
@@ -56,8 +100,13 @@ export function verifyOAuthState(
   req: NextRequest,
   state: string | null
 ): boolean {
+  if (readSignedOAuthState(state) !== null) return true;
   const expected = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
   return Boolean(state && expected && state === expected);
+}
+
+export function oauthBaseUrl(req: NextRequest): string {
+  return req.nextUrl.origin.replace(/\/$/, "");
 }
 
 export function safeNextPath(next: string | null | undefined): string {

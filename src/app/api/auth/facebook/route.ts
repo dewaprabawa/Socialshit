@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   applyOAuthStateCookie,
-  createOAuthState,
+  oauthBaseUrl,
   safeNextPath,
   sandboxLogin,
+  signOAuthState,
 } from "@/lib/auth";
 import { facebookLoginUrl, metaConfigured } from "@/lib/meta";
 
@@ -14,10 +15,8 @@ export async function GET(req: NextRequest) {
   if (!metaConfigured()) {
     return sandboxLogin(req, "facebook", next);
   }
-  const state = `${createOAuthState()}.${Buffer.from(next).toString("base64url")}`;
-  const base =
-    process.env.APP_BASE_URL || req.nextUrl.origin.replace(/\/$/, "");
-  const redirectUri = `${base}/api/auth/facebook/callback`;
+  const state = signOAuthState(next);
+  const redirectUri = `${oauthBaseUrl(req)}/api/auth/facebook/callback`;
   const res = NextResponse.redirect(facebookLoginUrl(redirectUri, state));
   applyOAuthStateCookie(res, state);
   return res;
