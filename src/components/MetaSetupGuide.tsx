@@ -30,7 +30,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MetaSetupGuide() {
+export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const [origin, setOrigin] = useState("http://localhost:3000");
 
   useEffect(() => {
@@ -44,11 +44,13 @@ export function MetaSetupGuide() {
   return (
     <div className="card space-y-4 text-sm">
       <div>
-        <h2 className="text-base font-semibold">Connect Facebook Developer</h2>
+        <h2 className="text-base font-semibold">
+          {metaReady ? "Finish Meta dashboard setup" : "Connect Facebook Developer"}
+        </h2>
         <p className="mt-1 text-slate-400">
-          Do this once so <span className="text-slate-200">Continue with Facebook</span> and{" "}
-          <span className="text-slate-200">Continue with Instagram</span> use your real Meta app
-          instead of sandbox login.
+          {metaReady
+            ? "App ID and secret are loaded. Add these exact redirect URIs in your Meta app, plus yourself as a Tester, then click Continue with Facebook."
+            : "Do this once so Continue with Facebook and Continue with Instagram use your real Meta app instead of sandbox login."}
         </p>
       </div>
 
