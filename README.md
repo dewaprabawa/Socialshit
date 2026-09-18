@@ -4,7 +4,9 @@ A marketing tool for **Instagram** and **Facebook** that can:
 
 - **Auto-generate content** — post ideas, captions, hashtags, and images with AI.
 - **Generate captions** in different tones tuned per platform and audience.
-- **Connect business accounts** — Facebook Pages and Instagram Business accounts via the Meta Graph API.
+- **Design with Canva** — create an editable Canva design from your post content and import the exported image (Canva Connect API, with an offline sandbox fallback).
+- **Real image uploads** — upload an image file (PNG/JPG/WEBP/GIF) or paste a URL or generate one.
+- **Connect business accounts** — a guided wizard connects Facebook Pages and Instagram Business accounts via the Meta Graph API (OAuth, manual token, or sandbox).
 - **Auto-publish & schedule** — publish immediately or schedule posts that are auto-published by a built-in scheduler.
 
 It works out of the box with **no external credentials**: AI generation falls back to a built-in template engine, and account connection + publishing run in a **sandbox (simulated) mode**. Add API keys to switch on real AI and live publishing.
@@ -39,6 +41,24 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 | `OPENAI_TEXT_MODEL` / `OPENAI_IMAGE_MODEL` | Models used for text/image generation. |
 | `META_APP_ID` / `META_APP_SECRET` | Enables real Facebook/Instagram connection + publishing. Omit for sandbox mode. |
 | `META_GRAPH_VERSION` | Meta Graph API version (default `v21.0`). |
+| `CANVA_CLIENT_ID` / `CANVA_CLIENT_SECRET` | Enables live Canva design creation + export. Omit for sandbox designs. |
+
+## Deploying to Vercel
+
+The GitHub repo is named `Socialshit`. Vercel **project names cannot have uppercase letters**, so the import form will fail if you leave the default name.
+
+**On the Vercel import screen, change Project Name from `Socialshit` to `socialshit`, then click Deploy.**
+
+Allowed characters: lowercase letters, digits, `.`, `_`, `-` (max 100). `package.json` and `vercel.json` already use `socialshit`.
+
+Then:
+
+1. **Add a Postgres database** — Vercel Storage → Postgres (or Neon) and set `DATABASE_URL`. The build runs `prisma migrate deploy` via `vercel-build`.
+2. **Enable uploads (optional)** — add a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`).
+3. **Scheduler** — `vercel.json` hits `/api/scheduler/tick` every 5 minutes.
+4. **Optional** — `OPENAI_API_KEY`, `META_APP_ID`/`META_APP_SECRET`, `CANVA_CLIENT_ID`/`CANVA_CLIENT_SECRET`.
+
+CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
 
 ## How it works
 

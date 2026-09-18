@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { PlatformBadge } from "@/components/StatusBadge";
+import { ConnectWizard } from "@/components/ConnectWizard";
 
 interface Account {
   id: string;
@@ -16,18 +17,16 @@ interface Account {
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [meta, setMeta] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [canva, setCanva] = useState<{ configured: boolean; connected: boolean }>(
+    { configured: false, connected: false }
+  );
   const [message, setMessage] = useState<{
     type: "ok" | "err";
     text: string;
   } | null>(null);
-
-  // Add-sandbox form.
-  const [platform, setPlatform] = useState("instagram");
-  const [name, setName] = useState("");
-  const [handle, setHandle] = useState("");
 
   const load = useCallback(async () => {
     const [a, c] = await Promise.all([
@@ -35,7 +34,7 @@ export default function AccountsPage() {
       fetch("/api/config").then((r) => r.json()),
     ]);
     setAccounts(a.accounts || []);
-    setMeta(Boolean(c.meta));
+    setCanva(c.canva || { configured: false, connected: false });
     setLoading(false);
   }, []);
 
@@ -49,34 +48,22 @@ export default function AccountsPage() {
       });
     } else if (params.get("error")) {
       setMessage({ type: "err", text: `Meta error: ${params.get("error")}` });
+    } else if (params.get("canva") === "connected") {
+      setMessage({ type: "ok", text: "Canva connected." });
+    } else if (params.get("canvaError")) {
+      setMessage({
+        type: "err",
+        text: `Canva error: ${params.get("canvaError")}`,
+      });
     }
     load();
   }, [load]);
 
-  async function addSandbox(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) {
-      setMessage({ type: "err", text: "Enter an account name." });
-      return;
-    }
-    setBusy("add");
-    try {
-      const res = await fetch("/api/accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform, name, handle }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add account");
-      setName("");
-      setHandle("");
-      setMessage({ type: "ok", text: "Sandbox account added." });
-      load();
-    } catch (err) {
-      setMessage({ type: "err", text: (err as Error).message });
-    } finally {
-      setBusy(null);
-    }
+  async function disconnectCanva() {
+    setBusy("canva");
+    await fetch("/api/canva/disconnect", { method: "POST" });
+    setBusy(null);
+    load();
   }
 
   async function remove(id: string) {
@@ -88,11 +75,19 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Accounts</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Connect your Instagram Business account and Facebook Page.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Accounts</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Connect your Instagram Business account and Facebook Page.
+          </p>
+        </div>
+        <button
+          className="btn-primary"
+          onClick={() => setWizardOpen(true)}
+        >
+          + Add integration
+        </button>
       </div>
 
       {message && (
@@ -107,77 +102,19 @@ export default function AccountsPage() {
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="card">
-          <h2 className="font-semibold">Connect with Meta</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Authorize Socialshit to manage your Facebook Pages and linked
-            Instagram Business accounts.
-          </p>
-          {meta ? (
-            <a href="/api/auth/meta" className="btn-primary mt-4">
-              Connect Facebook &amp; Instagram
-            </a>
-          ) : (
-            <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-              Meta app credentials are not configured. Set{" "}
-              <code className="text-amber-100">META_APP_ID</code> and{" "}
-              <code className="text-amber-100">META_APP_SECRET</code> to enable
-              real connections. Meanwhile, add a sandbox account to try the full
-              flow.
-            </div>
-          )}
-        </div>
-
-        <div className="card">
-          <h2 className="font-semibold">Add a sandbox account</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Simulated account for testing generation, scheduling, and publishing.
-          </p>
-          <form onSubmit={addSandbox} className="mt-4 space-y-3">
-            <div>
-              <label className="label">Platform</label>
-              <select
-                className="input"
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-              >
-                <option value="instagram">Instagram</option>
-                <option value="facebook">Facebook</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Account name</label>
-              <input
-                className="input"
-                placeholder="My Brand"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label">Handle (optional)</label>
-              <input
-                className="input"
-                placeholder="@mybrand"
-                value={handle}
-                onChange={(e) => setHandle(e.target.value)}
-              />
-            </div>
-            <button className="btn-primary" disabled={busy === "add"}>
-              {busy === "add" ? "Adding…" : "Add sandbox account"}
-            </button>
-          </form>
-        </div>
-      </div>
-
       <div>
         <h2 className="mb-3 font-semibold">Connected accounts</h2>
         {loading ? (
           <p className="text-slate-400">Loading…</p>
         ) : accounts.length === 0 ? (
-          <div className="card text-center text-slate-400">
-            No accounts yet. Connect with Meta or add a sandbox account above.
+          <div className="card text-center">
+            <p className="text-slate-400">No integrations yet.</p>
+            <button
+              className="btn-primary mt-4"
+              onClick={() => setWizardOpen(true)}
+            >
+              + Add your first integration
+            </button>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -217,6 +154,64 @@ export default function AccountsPage() {
           </div>
         )}
       </div>
+
+      <div>
+        <h2 className="mb-3 font-semibold">Design tools</h2>
+        <div className="card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-pink-500 font-black text-white">
+              C
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Canva</span>
+                <span
+                  className={`badge ${
+                    canva.connected
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-amber-500/20 text-amber-300"
+                  }`}
+                >
+                  {canva.connected
+                    ? "Connected"
+                    : canva.configured
+                    ? "Not connected"
+                    : "Sandbox mode"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Generate and edit editable post designs in Canva.
+              </p>
+            </div>
+          </div>
+          <div>
+            {canva.connected ? (
+              <button
+                className="btn-ghost"
+                onClick={disconnectCanva}
+                disabled={busy === "canva"}
+              >
+                {busy === "canva" ? "…" : "Disconnect"}
+              </button>
+            ) : canva.configured ? (
+              <a href="/api/auth/canva" className="btn-primary">
+                Connect Canva
+              </a>
+            ) : (
+              <span className="text-xs text-amber-400/80">
+                Set CANVA_CLIENT_ID &amp; CANVA_CLIENT_SECRET to connect. Sandbox
+                designs work now.
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <ConnectWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onConnected={load}
+      />
     </div>
   );
 }

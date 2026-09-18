@@ -2,27 +2,43 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { aiConfigured } from "@/lib/ai";
 import { metaConfigured } from "@/lib/meta";
+import { canvaConfigured, canvaConnected } from "@/lib/canva";
 import { StatusBadge, PlatformBadge } from "@/components/StatusBadge";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [accounts, total, published, scheduled, drafts, recent] =
-    await Promise.all([
+  let accounts = 0;
+  let total = 0;
+  let published = 0;
+  let scheduled = 0;
+  let recent: Awaited<ReturnType<typeof prisma.post.findMany>> = [];
+  let dbError: string | null = null;
+
+  try {
+    [accounts, total, published, scheduled, recent] = await Promise.all([
       prisma.account.count(),
       prisma.post.count(),
       prisma.post.count({ where: { status: "published" } }),
       prisma.post.count({ where: { status: "scheduled" } }),
-      prisma.post.count({ where: { status: "draft" } }),
       prisma.post.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
         include: { account: true },
       }),
     ]);
+  } catch (err) {
+    dbError =
+      err instanceof Error
+        ? err.message
+        : "Database is not available. Set DATABASE_URL to a PostgreSQL connection string.";
+    console.error("[dashboard] database query failed:", err);
+  }
 
   const ai = aiConfigured();
   const meta = metaConfigured();
+  const canva = canvaConfigured() ? await canvaConnected().catch(() => false) : false;
+  const canvaCfg = canvaConfigured();
 
   const stats = [
     { label: "Connected accounts", value: accounts, href: "/accounts" },
@@ -33,6 +49,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {dbError && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <p className="font-semibold">Database is not connected</p>
+          <p className="mt-1 text-amber-200/80">
+            On Vercel, add a Postgres database and set{" "}
+            <code className="text-amber-100">DATABASE_URL</code> (or{" "}
+            <code className="text-amber-100">POSTGRES_PRISMA_URL</code>), then
+            redeploy. The project name must be lowercase{" "}
+            <code className="text-amber-100">socialshit</code>.
+          </p>
+        </div>
+      )}
       <section>
         <h1 className="text-3xl font-bold tracking-tight">
           Marketing on autopilot
@@ -86,6 +114,22 @@ export default async function DashboardPage() {
                 }`}
               >
                 {meta ? "Connected" : "Sandbox mode"}
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Canva (design content)</span>
+              <span
+                className={`badge ${
+                  canva
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "bg-amber-500/20 text-amber-300"
+                }`}
+              >
+                {canva
+                  ? "Connected"
+                  : canvaCfg
+                  ? "Not connected"
+                  : "Sandbox mode"}
               </span>
             </li>
           </ul>

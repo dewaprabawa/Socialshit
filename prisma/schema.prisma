@@ -1,9 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,6 +20,13 @@ model Account {
   sandbox      Boolean  @default(true)
   createdAt    DateTime @default(now())
   posts        Post[]
+}
+
+// Simple key/value store for integration tokens and settings.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 // A piece of content that can be published now or scheduled.

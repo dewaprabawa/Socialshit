@@ -120,7 +120,7 @@ async function publishFacebook(input: PublishInput): Promise<PublishResult> {
 }
 
 export async function publishPost(input: PublishInput): Promise<PublishResult> {
-  if (input.sandbox || !metaConfigured() || input.accessToken === "sandbox") {
+  if (input.sandbox || input.accessToken === "sandbox") {
     return sandboxPublish(input);
   }
   return input.platform === "instagram"
