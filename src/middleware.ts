@@ -4,6 +4,7 @@ import { SESSION_COOKIE } from "@/lib/auth";
 
 const PUBLIC_PREFIXES = [
   "/login",
+  "/privacy",
   "/api/auth/facebook",
   "/api/auth/instagram",
   "/api/auth/demo",

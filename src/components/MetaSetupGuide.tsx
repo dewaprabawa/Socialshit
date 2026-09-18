@@ -40,6 +40,8 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const facebookCallback = `${origin}/api/auth/facebook/callback`;
   const instagramCallback = `${origin}/api/auth/instagram/callback`;
   const pagesCallback = `${origin}/api/auth/meta/callback`;
+  const privacyUrl = `${origin}/privacy`;
+  const deletionUrl = `${origin}/privacy#data-deletion`;
 
   return (
     <div className="card space-y-4 text-sm">
@@ -88,6 +90,8 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
         <CopyRow label="Facebook Login callback" value={facebookCallback} />
         <CopyRow label="Instagram Login callback" value={instagramCallback} />
         <CopyRow label="Connect Pages / IG Business (after you are signed in)" value={pagesCallback} />
+        <CopyRow label="Privacy Policy URL (App settings → Basic)" value={privacyUrl} />
+        <CopyRow label="User data deletion instructions URL" value={deletionUrl} />
       </div>
 
       <ol className="list-decimal space-y-3 pl-5 text-slate-300" start={4}>
@@ -122,6 +126,12 @@ APP_BASE_URL=${origin}`}</pre>
           <span className="text-white">Continue with Facebook</span>. After login, use{" "}
           <span className="text-white">Accounts → Add integration → Connect with Meta</span> to
           attach Pages and linked Instagram Business accounts for publishing.
+        </li>
+        <li>
+          Before switching the Meta app to <span className="text-white">Live</span>, paste the
+          Privacy Policy URL and data-deletion URL above into{" "}
+          <span className="text-white">App settings → Basic</span>. Testers can keep using the app
+          in Development without Live mode. Publishing permissions still need App Review.
         </li>
       </ol>
     </div>

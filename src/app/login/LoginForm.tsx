@@ -101,7 +101,12 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
           <p className="pt-1 text-center text-xs text-slate-500">
             {metaReady
               ? "You’ll be redirected to Facebook or Instagram to authorize Socialshit."
-              : "Meta app keys are not set — these buttons create a sandbox session so you can try the full marketing flow."}
+              : "Meta app keys are not set — these buttons create a sandbox session so you can try the full marketing flow."}{" "}
+            By continuing, you agree to our{" "}
+            <a href="/privacy" className="text-slate-300 hover:underline">
+              Privacy Policy
+            </a>
+            .
           </p>
         </div>
       </div>
