@@ -3,14 +3,26 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const existing = await prisma.account.count();
+  const existing = await prisma.user.count();
   if (existing > 0) {
-    console.log(`Seed skipped: ${existing} account(s) already exist.`);
+    console.log(`Seed skipped: ${existing} user(s) already exist.`);
     return;
   }
 
+  const fbUser = await prisma.user.create({
+    data: {
+      provider: "facebook",
+      providerUserId: "demo-facebook",
+      name: "Facebook Demo",
+      sandbox: true,
+      avatarUrl:
+        "https://api.dicebear.com/9.x/identicon/svg?seed=facebook-demo",
+    },
+  });
+
   const ig = await prisma.account.create({
     data: {
+      userId: fbUser.id,
       platform: "instagram",
       name: "Socialshit Demo (IG)",
       handle: "@socialshit.demo",
@@ -22,8 +34,9 @@ async function main() {
     },
   });
 
-  const fb = await prisma.account.create({
+  await prisma.account.create({
     data: {
+      userId: fbUser.id,
       platform: "facebook",
       name: "Socialshit Demo Page",
       handle: "Socialshit Demo Page",
@@ -52,7 +65,7 @@ async function main() {
     },
   });
 
-  console.log("Seed complete:", { ig: ig.id, fb: fb.id });
+  console.log("Seed complete. Sign in with Facebook (sandbox) to see demo data.");
 }
 
 main()

@@ -1,27 +1,34 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { aiConfigured } from "@/lib/ai";
 import { metaConfigured } from "@/lib/meta";
 import { canvaConfigured, canvaConnected } from "@/lib/canva";
+import { getCurrentUser } from "@/lib/auth";
 import { StatusBadge, PlatformBadge } from "@/components/StatusBadge";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
   let accounts = 0;
   let total = 0;
   let published = 0;
   let scheduled = 0;
   let recent: Awaited<ReturnType<typeof prisma.post.findMany>> = [];
   let dbError: string | null = null;
+  const owned = { userId: user.id };
 
   try {
     [accounts, total, published, scheduled, recent] = await Promise.all([
-      prisma.account.count(),
-      prisma.post.count(),
-      prisma.post.count({ where: { status: "published" } }),
-      prisma.post.count({ where: { status: "scheduled" } }),
+      prisma.account.count({ where: owned }),
+      prisma.post.count({ where: { account: owned } }),
+      prisma.post.count({ where: { status: "published", account: owned } }),
+      prisma.post.count({ where: { status: "scheduled", account: owned } }),
       prisma.post.findMany({
+        where: { account: owned },
         orderBy: { createdAt: "desc" },
         take: 5,
         include: { account: true },
@@ -66,8 +73,10 @@ export default async function DashboardPage() {
           Marketing on autopilot
         </h1>
         <p className="mt-2 max-w-2xl text-slate-400">
-          Generate content and captions with AI, connect your Instagram Business
-          and Facebook Page, then publish now or schedule for later.
+          Signed in as {user.name} with {user.provider}
+          {user.sandbox ? " (sandbox)" : ""}. Generate content and captions with
+          AI, connect your Instagram Business and Facebook Page, then publish
+          now or schedule for later.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/studio" className="btn-primary">

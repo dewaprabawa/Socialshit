@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
   const status = req.nextUrl.searchParams.get("status");
   const posts = await prisma.post.findMany({
-    where: status ? { status } : undefined,
+    where: {
+      account: { userId: auth.user.id },
+      ...(status ? { status } : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: { account: true },
   });
@@ -14,6 +21,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
   const body = await req.json().catch(() => ({}));
   const { accountId, caption, hashtags, mediaUrl, scheduledAt, aiGenerated } =
     body;
@@ -28,7 +38,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "caption is required" }, { status: 400 });
   }
 
-  const account = await prisma.account.findUnique({ where: { id: accountId } });
+  const account = await prisma.account.findFirst({
+    where: { id: accountId, userId: auth.user.id },
+  });
   if (!account) {
     return NextResponse.json({ error: "account not found" }, { status: 404 });
   }

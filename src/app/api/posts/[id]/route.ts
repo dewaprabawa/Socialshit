@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,16 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
+  const existing = await prisma.post.findFirst({
+    where: { id: params.id, account: { userId: auth.user.id } },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "post not found" }, { status: 404 });
+  }
+
   const body = await req.json().catch(() => ({}));
   const data: Record<string, unknown> = {};
   if (typeof body.caption === "string") data.caption = body.caption;
@@ -29,20 +40,25 @@ export async function PATCH(
     }
   }
 
-  const post = await prisma.post
-    .update({ where: { id: params.id }, data, include: { account: true } })
-    .catch(() => null);
-
-  if (!post) {
-    return NextResponse.json({ error: "post not found" }, { status: 404 });
-  }
+  const post = await prisma.post.update({
+    where: { id: params.id },
+    data,
+    include: { account: true },
+  });
   return NextResponse.json({ post });
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  await prisma.post.delete({ where: { id: params.id } }).catch(() => null);
+  const auth = await requireUser(req);
+  if (auth.error) return auth.error;
+
+  await prisma.post
+    .deleteMany({
+      where: { id: params.id, account: { userId: auth.user.id } },
+    })
+    .catch(() => null);
   return NextResponse.json({ ok: true });
 }

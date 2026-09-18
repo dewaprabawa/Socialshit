@@ -6,10 +6,11 @@ A marketing tool for **Instagram** and **Facebook** that can:
 - **Generate captions** in different tones tuned per platform and audience.
 - **Design with Canva** — create an editable Canva design from your post content and import the exported image (Canva Connect API, with an offline sandbox fallback).
 - **Real image uploads** — upload an image file (PNG/JPG/WEBP/GIF) or paste a URL or generate one.
+- **Sign in with Facebook or Instagram** — Facebook Login and Instagram Login (sandbox login when Meta keys are not set).
 - **Connect business accounts** — a guided wizard connects Facebook Pages and Instagram Business accounts via the Meta Graph API (OAuth, manual token, or sandbox).
 - **Auto-publish & schedule** — publish immediately or schedule posts that are auto-published by a built-in scheduler.
 
-It works out of the box with **no external credentials**: AI generation falls back to a built-in template engine, and account connection + publishing run in a **sandbox (simulated) mode**. Add API keys to switch on real AI and live publishing.
+It works out of the box with **no external credentials**: sign in with sandbox Facebook/Instagram buttons, AI generation falls back to a built-in template engine, and account connection + publishing run in a **sandbox (simulated) mode**. Add API keys to switch on real login, AI, and live publishing.
 
 ## Tech stack
 
@@ -39,7 +40,7 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 | `APP_BASE_URL` | Base URL used for OAuth redirects. |
 | `OPENAI_API_KEY` | Enables real AI generation. Omit to use the offline template engine. |
 | `OPENAI_TEXT_MODEL` / `OPENAI_IMAGE_MODEL` | Models used for text/image generation. |
-| `META_APP_ID` / `META_APP_SECRET` | Enables real Facebook/Instagram connection + publishing. Omit for sandbox mode. |
+| `META_APP_ID` / `META_APP_SECRET` | Enables Facebook Login, Instagram Login, real Page/IG connection, and publishing. Omit for sandbox login + sandbox publishing. |
 | `META_GRAPH_VERSION` | Meta Graph API version (default `v21.0`). |
 | `CANVA_CLIENT_ID` / `CANVA_CLIENT_SECRET` | Enables live Canva design creation + export. Omit for sandbox designs. |
 
@@ -67,8 +68,11 @@ CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
   Publish now, schedule, or save as a draft.
 - **Posts** (`/posts`) — manage drafts/scheduled/published posts, publish
   manually, or trigger the scheduler.
+- **Login** (`/login`) — Continue with Facebook or Continue with Instagram.
+  With Meta keys, that is real OAuth. Without them, sandbox sessions are created
+  so you can use the rest of the app.
 - **Accounts** (`/accounts`) — connect via Meta OAuth (when configured) or add
-  sandbox accounts to try the full flow.
+  sandbox accounts to try the full flow. Accounts are scoped to the signed-in user.
 
 ### Publishing pipeline
 
