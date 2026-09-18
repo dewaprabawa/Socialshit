@@ -103,7 +103,7 @@ On Vercel, `APP_BASE_URL` must be your public HTTPS origin, for example `https:/
 
 Permissions this app requests:
 
-- Login: `public_profile` (Facebook) and `instagram_business_basic`, `instagram_business_content_publish` (Instagram).
+- Login: `public_profile` plus `pages_show_list` (Facebook Login for Business requires at least one permission besides public_profile) and `instagram_business_basic`, `instagram_business_content_publish` (Instagram).
 - Publishing (Connect with Meta): `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `business_management` — via Facebook Login for Business `config_id`, not as consumer Facebook Login scopes.
 
 Going **Live** later requires a **Privacy Policy URL** and Meta App Review for those publishing permissions. Testers can use the app while it stays in Development.

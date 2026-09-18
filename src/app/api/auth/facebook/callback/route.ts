@@ -34,6 +34,11 @@ export async function GET(req: NextRequest) {
     let code = err;
     if (lower.includes("invalid scope")) code = "invalid_scopes";
     else if (
+      lower.includes("supported permission") ||
+      lower.includes("setidaknya satu")
+    ) {
+      code = "missing_supported_permission";
+    } else if (
       lower.includes("tidak bisa diakses") ||
       lower.includes("not accessible") ||
       lower.includes("isn't available") ||

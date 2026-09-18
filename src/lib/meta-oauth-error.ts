@@ -12,14 +12,27 @@ export function friendlyMetaOAuthError(
     : "/api/auth/facebook/callback";
 
   if (
+    lower === "missing_supported_permission" ||
+    lower.includes("supported permission") ||
+    lower.includes("setidaknya satu")
+  ) {
+    return (
+      "Facebook Login for Business needs at least one permission besides " +
+      "public_profile (this app asks for pages_show_list). In the Meta app open " +
+      "Use cases → Authentication → Customize and add pages_show_list, or create a " +
+      "Facebook Login for Business configuration with that permission and set " +
+      "META_LOGIN_CONFIG_ID on Vercel, then Redeploy."
+    );
+  }
+  if (
     lower === "invalid_scopes" ||
     lower.includes("invalid scope") ||
     lower.includes("invalid_scope")
   ) {
     return (
       "Facebook rejected the Page/Instagram permissions (Invalid Scopes). " +
-      "Continue with Facebook (login) only needs public_profile. Connect Pages needs " +
-      "Facebook Login for Business: add that product, create a User access token " +
+      "Continue with Facebook (login) now also requests pages_show_list. " +
+      "Connect Pages needs Facebook Login for Business: add that product, create a User access token " +
       "configuration with pages_show_list, pages_read_engagement, pages_manage_posts, " +
       "instagram_basic, instagram_content_publish, and business_management, then set " +
       "META_LOGIN_CONFIG_ID on Vercel and Redeploy. Or add each permission under " +

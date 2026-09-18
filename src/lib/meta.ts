@@ -173,11 +173,15 @@ function facebookDialogUrl(
   return `https://www.facebook.com/${graphVersion()}/dialog/oauth?${params}`;
 }
 
-// Facebook Login — identity. public_profile is available without extra App Review.
-// Do not require email: new Meta apps often reject the email scope until it is
-// added under Use cases, which surfaces as a Facebook login error.
+// Facebook Login for Business rejects public_profile-only dialogs with
+// "this app requires at least one supported permission". pages_show_list is
+// the smallest extra permission a marketing app needs. When a Login for
+// Business configuration exists, config_id replaces the scope list.
 export function facebookLoginUrl(redirectUri: string, state: string): string {
-  return facebookDialogUrl(redirectUri, state, { scopes: ["public_profile"] });
+  return facebookDialogUrl(redirectUri, state, {
+    scopes: ["public_profile", "pages_show_list"],
+    configId: metaLoginConfigId(),
+  });
 }
 
 // Instagram Login (Instagram API with Instagram Login).

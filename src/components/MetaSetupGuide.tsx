@@ -63,12 +63,6 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const rolesUrl = metaAppId
     ? `${appBase}/roles/roles/`
     : "https://developers.facebook.com/apps/";
-  const loginSettingsUrl = metaAppId
-    ? `${appBase}/fb-login/settings/`
-    : "https://developers.facebook.com/apps/";
-  const basicSettingsUrl = metaAppId
-    ? `${appBase}/settings/basic/`
-    : "https://developers.facebook.com/apps/";
 
   return (
     <div className="card space-y-4 text-sm">
@@ -78,7 +72,7 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
         </h2>
         <p className="mt-1 text-slate-400">
           {metaReady
-            ? "App ID and secret are loaded. Login uses public_profile only. Connecting Pages needs Facebook Login for Business (or those permissions added under App Review)."
+            ? "App ID and secret are loaded. This is a Business app, so Facebook Login must request at least one permission besides public_profile (pages_show_list). Connecting Pages needs Facebook Login for Business or those publishing permissions."
             : "Do this once so Continue with Facebook and Continue with Instagram use your real Meta app instead of sandbox login."}
         </p>
       </div>
@@ -86,17 +80,43 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
       {metaReady && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-amber-100">
           <p className="font-medium text-amber-50">
-            “Aplikasi ini tidak bisa diakses sekarang”
+            “Tampaknya aplikasi ini tidak tersedia / membutuhkan setidaknya satu
+            supported permission”
           </p>
           <p className="mt-1 text-xs text-amber-100/90">
-            Facebook shows that when the app is in Development and your Facebook
-            account is not a role on the app, Facebook Login is missing, or the
-            app is switched off. Live / App Review is not required for you to
-            sign in.
+            Facebook Login for Business will not open with public_profile alone.
+            Socialshit now requests <code className="text-white">pages_show_list</code>{" "}
+            as well. You still have to add that permission on the Meta app.
           </p>
           <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-amber-100/90">
             <li>
               Open{" "}
+              <a
+                className="text-white underline"
+                href={appBase}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Use cases
+              </a>{" "}
+              → Authentication and Account Creation → Customize, and add{" "}
+              <span className="text-white">pages_show_list</span>.
+            </li>
+            <li>
+              Or create a{" "}
+              <a
+                className="text-white underline"
+                href={loginBusinessUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Facebook Login for Business configuration
+              </a>{" "}
+              (User access token) that includes pages_show_list, then set{" "}
+              <code className="text-white">META_LOGIN_CONFIG_ID</code> and Redeploy.
+            </li>
+            <li>
+              Add yourself under{" "}
               <a
                 className="text-white underline"
                 href={rolesUrl}
@@ -105,37 +125,7 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
               >
                 App roles
               </a>{" "}
-              and add the same Facebook user you click Continue with. Role:{" "}
-              <span className="text-white">Administrator</span> or{" "}
-              <span className="text-white">Tester</span>. Accept the invite email
-              if Facebook sends one.
-            </li>
-            <li>
-              Add{" "}
-              <a
-                className="text-white underline"
-                href={loginSettingsUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Facebook Login
-              </a>{" "}
-              (Use cases → Authentication and Account Creation → Customize). Turn
-              on Client OAuth login and Web OAuth login.
-            </li>
-            <li>
-              In{" "}
-              <a
-                className="text-white underline"
-                href={basicSettingsUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Settings → Basic
-              </a>{" "}
-              set App domains to the host below (no https://) and add a Website
-              platform with the Site URL. Keep App Mode on{" "}
-              <span className="text-white">Development</span>.
+              if Facebook still says the app cannot be accessed.
             </li>
           </ol>
         </div>
