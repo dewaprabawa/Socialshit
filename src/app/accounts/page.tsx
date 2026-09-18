@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PlatformBadge } from "@/components/StatusBadge";
 import { ConnectWizard } from "@/components/ConnectWizard";
+import { parseJson } from "@/lib/parse-json";
 
 interface Account {
   id: string;
@@ -29,13 +30,25 @@ export default function AccountsPage() {
   } | null>(null);
 
   const load = useCallback(async () => {
-    const [a, c] = await Promise.all([
-      fetch("/api/accounts").then((r) => r.json()),
-      fetch("/api/config").then((r) => r.json()),
-    ]);
-    setAccounts(a.accounts || []);
-    setCanva(c.canva || { configured: false, connected: false });
-    setLoading(false);
+    try {
+      const [a, c] = await Promise.all([
+        fetch("/api/accounts").then((r) =>
+          parseJson<{ accounts?: Account[] }>(r)
+        ),
+        fetch("/api/config").then((r) =>
+          parseJson<{ canva?: { configured: boolean; connected: boolean } }>(r)
+        ),
+      ]);
+      setAccounts(a.accounts || []);
+      setCanva(c.canva || { configured: false, connected: false });
+    } catch (err) {
+      setMessage({
+        type: "err",
+        text: err instanceof Error ? err.message : "Failed to load accounts",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

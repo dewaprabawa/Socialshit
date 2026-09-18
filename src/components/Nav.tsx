@@ -26,8 +26,15 @@ export function Nav() {
 
   useEffect(() => {
     fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => setMe(d.user || null))
+      .then((r) => r.text())
+      .then((text) => {
+        if (!text) {
+          setMe(null);
+          return;
+        }
+        const data = JSON.parse(text) as { user?: Me | null };
+        setMe(data.user || null);
+      })
       .catch(() => setMe(null));
   }, [pathname]);
 
