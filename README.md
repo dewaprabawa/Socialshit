@@ -45,17 +45,20 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 
 ## Deploying to Vercel
 
-The app is Vercel-ready: it uses **PostgreSQL** (via Prisma), a **Vercel Cron** for the scheduler (`vercel.json`), and **Vercel Blob** for uploads when configured.
+The GitHub repo is named `Socialshit`. Vercel **project names cannot have uppercase letters**, so the import form will fail if you leave the default name.
 
-Steps:
+**On the Vercel import screen, change Project Name from `Socialshit` to `socialshit`, then click Deploy.**
 
-1. **Import the repo** in Vercel and set the **Project Name** to something lowercase such as `socialshit` (Vercel rejects the capitalized repo name `Socialshit`).
-2. **Add a Postgres database** — create a Vercel Postgres or Neon database and set `DATABASE_URL` in the project's Environment Variables. The build runs `prisma migrate deploy` automatically (`vercel-build` script), creating the schema on first deploy.
-3. **Enable uploads (optional)** — add a Vercel Blob store; it sets `BLOB_READ_WRITE_TOKEN` so `/api/upload` stores files in Blob. Without it, uploads only work locally.
-4. **Scheduler** — `vercel.json` registers a cron hitting `/api/scheduler/tick` every 5 minutes (adjust to your plan's limits).
-5. **Optional integrations** — add `OPENAI_API_KEY`, `META_APP_ID`/`META_APP_SECRET`, and `CANVA_CLIENT_ID`/`CANVA_CLIENT_SECRET` to enable live AI, publishing, and Canva.
+Allowed characters: lowercase letters, digits, `.`, `_`, `-` (max 100). `package.json` and `vercel.json` already use `socialshit`.
 
-To deploy from the CLI instead: `vercel link`, set the env vars above, then `vercel --prod`.
+Then:
+
+1. **Add a Postgres database** — Vercel Storage → Postgres (or Neon) and set `DATABASE_URL`. The build runs `prisma migrate deploy` via `vercel-build`.
+2. **Enable uploads (optional)** — add a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`).
+3. **Scheduler** — `vercel.json` hits `/api/scheduler/tick` every 5 minutes.
+4. **Optional** — `OPENAI_API_KEY`, `META_APP_ID`/`META_APP_SECRET`, `CANVA_CLIENT_ID`/`CANVA_CLIENT_SECRET`.
+
+CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
 
 ## How it works
 
