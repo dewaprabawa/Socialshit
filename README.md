@@ -43,6 +43,7 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 | `META_APP_ID` / `META_APP_SECRET` | Enables Facebook Login, Instagram Login, real Page/IG connection, and publishing. Omit for sandbox login + sandbox publishing. |
 | `META_GRAPH_VERSION` | Meta Graph API version (default `v21.0`). |
 | `CANVA_CLIENT_ID` / `CANVA_CLIENT_SECRET` | Enables live Canva design creation + export. Omit for sandbox designs. |
+| `PRIVACY_CONTACT_EMAIL` | Optional email shown on `/privacy`. |
 
 ## Deploying to Vercel
 
@@ -104,7 +105,23 @@ Permissions this app requests:
 - Login: `public_profile`, `email` (Facebook) and `instagram_business_basic`, `instagram_business_content_publish` (Instagram).
 - Publishing (Connect with Meta): `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `business_management`.
 
-Going **Live** later requires a privacy policy URL and Meta App Review for those publishing permissions. Testers can use the app while it stays in Development.
+Going **Live** later requires a **Privacy Policy URL** and Meta App Review for those publishing permissions. Testers can use the app while it stays in Development.
+
+Public legal URLs (no login required):
+
+```
+{APP_BASE_URL}/privacy
+{APP_BASE_URL}/privacy#data-deletion
+```
+
+Examples:
+
+```
+http://localhost:3000/privacy
+https://socialshit-dev-1.vercel.app/privacy
+```
+
+In the Meta app: **App settings → Basic → Privacy Policy URL**, and **User data deletion** → Data deletion instructions URL (`/privacy#data-deletion`). Optional: set `PRIVACY_CONTACT_EMAIL` so a contact address appears on the policy page.
 
 ## How it works
 

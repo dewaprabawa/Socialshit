@@ -38,7 +38,7 @@ export function Nav() {
       .catch(() => setMe(null));
   }, [pathname]);
 
-  if (pathname === "/login") return null;
+  if (pathname === "/login" || pathname === "/privacy") return null;
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
