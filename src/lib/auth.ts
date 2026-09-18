@@ -120,10 +120,14 @@ export function readEphemeralUser(token: string | undefined): AuthUser | null {
   }
 }
 
-export function signOAuthState(nextPath: string): string {
+export function signOAuthState(
+  nextPath: string,
+  flow: "login" | "pages" = "login"
+): string {
   const payload = Buffer.from(
     JSON.stringify({
       n: safeNextPath(nextPath),
+      f: flow,
       t: Date.now(),
       r: crypto.randomBytes(8).toString("hex"),
     })
@@ -135,7 +139,10 @@ export function signOAuthState(nextPath: string): string {
   return `${payload}.${sig}`;
 }
 
-export function readSignedOAuthState(state: string | null): string | null {
+export function readOAuthState(state: string | null): {
+  next: string;
+  flow: "login" | "pages";
+} | null {
   if (!state) return null;
   const i = state.lastIndexOf(".");
   if (i <= 0) return null;
@@ -151,13 +158,21 @@ export function readSignedOAuthState(state: string | null): string | null {
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       n?: string;
+      f?: string;
       t?: number;
     };
     if (!data.t || Date.now() - data.t > 10 * 60 * 1000) return null;
-    return safeNextPath(data.n);
+    return {
+      next: safeNextPath(data.n),
+      flow: data.f === "pages" ? "pages" : "login",
+    };
   } catch {
     return null;
   }
+}
+
+export function readSignedOAuthState(state: string | null): string | null {
+  return readOAuthState(state)?.next ?? null;
 }
 
 export function applyOAuthStateCookie(res: NextResponse, state: string) {

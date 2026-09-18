@@ -3,9 +3,10 @@ import {
   finishLogin,
   oauthBaseUrl,
   persistUser,
-  readSignedOAuthState,
+  readOAuthState,
   verifyOAuthState,
 } from "@/lib/auth";
+import { completePagesOAuth } from "@/lib/connect-pages";
 import {
   exchangeCodeForToken,
   fetchFacebookProfile,
@@ -25,8 +26,14 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("error_reason") ||
     req.nextUrl.searchParams.get("error");
   if (err) {
+    const dest =
+      readOAuthState(req.nextUrl.searchParams.get("state"))?.flow === "pages"
+        ? "/accounts"
+        : "/login";
+    const lower = err.toLowerCase();
+    const code = lower.includes("invalid scope") ? "invalid_scopes" : err;
     return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(err)}`, req.url)
+      new URL(`${dest}?error=${encodeURIComponent(code)}`, req.url)
     );
   }
   const code = req.nextUrl.searchParams.get("code");
@@ -43,6 +50,11 @@ export async function GET(req: NextRequest) {
   }
 
   const redirectUri = `${oauthBaseUrl(req)}/api/auth/facebook/callback`;
+  const parsed = readOAuthState(state);
+
+  if (parsed?.flow === "pages") {
+    return completePagesOAuth(req, code, redirectUri);
+  }
 
   try {
     const accessToken = await exchangeCodeForToken(code, redirectUri);
@@ -55,7 +67,7 @@ export async function GET(req: NextRequest) {
       avatarUrl: profile.avatarUrl,
       sandbox: false,
     });
-    return finishLogin(req, user, readSignedOAuthState(state) || "/");
+    return finishLogin(req, user, parsed?.next || "/");
   } catch (e) {
     const message = e instanceof Error ? e.message : "Facebook login failed";
     console.error("[facebook-callback]", message);

@@ -3,6 +3,7 @@
 import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MetaSetupGuide } from "@/components/MetaSetupGuide";
+import { friendlyMetaOAuthError } from "@/lib/meta-oauth-error";
 
 type Provider = "facebook" | "instagram";
 
@@ -36,28 +37,9 @@ function LoginForm({ metaReady }: { metaReady: boolean }) {
 
   const errorText = useMemo(() => {
     if (!error) return null;
-    const decoded = error.replace(/\+/g, " ");
-    if (decoded === "access_denied" || decoded === "user_denied") {
-      return "Facebook login was cancelled. Try Continue with Facebook again.";
-    }
-    if (decoded.toLowerCase().includes("invalid scope")) {
-      return "This Meta app has not enabled the requested Facebook permission. In Use cases → Authentication, add public_profile, then retry.";
-    }
-    if (decoded.toLowerCase().includes("redirect_uri")) {
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "";
-      return `${decoded} Add ${origin}/api/auth/facebook/callback to Valid OAuth Redirect URIs in the Meta app.`;
-    }
-    if (decoded.toLowerCase().includes("meta app is not configured")) {
-      return "Meta app keys are not set on this host. In Vercel → Settings → Environment Variables add META_APP_ID, META_APP_SECRET, and APP_BASE_URL, then Redeploy.";
-    }
-    if (
-      decoded.toLowerCase().includes("database") ||
-      decoded.includes("DATABASE_URL")
-    ) {
-      return "This host has no Postgres URL, so a database session could not be saved. Add DATABASE_URL on Vercel (or META_APP_ID / META_APP_SECRET for Facebook Login).";
-    }
-    return decoded;
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    return friendlyMetaOAuthError(error, origin);
   }, [error]);
   const facebookHref = `/api/auth/facebook?next=${encodeURIComponent(next)}`;
   const instagramHref = `/api/auth/instagram?next=${encodeURIComponent(next)}`;

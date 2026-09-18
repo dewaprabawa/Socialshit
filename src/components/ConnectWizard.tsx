@@ -16,6 +16,8 @@ const STEPS = ["Platform", "Method", "Details", "Done"];
 export function ConnectWizard({ open, onClose, onConnected }: Props) {
   const [step, setStep] = useState(0);
   const [metaReady, setMetaReady] = useState(false);
+  const [metaLoginConfig, setMetaLoginConfig] = useState(false);
+  const [metaAppId, setMetaAppId] = useState<string | null>(null);
   const [platform, setPlatform] = useState<Platform | "">("");
   const [method, setMethod] = useState<Method | "">("");
 
@@ -45,7 +47,11 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
     setCreated(null);
     fetch("/api/config")
       .then((r) => r.json())
-      .then((d) => setMetaReady(Boolean(d.meta)))
+      .then((d) => {
+        setMetaReady(Boolean(d.meta));
+        setMetaLoginConfig(Boolean(d.metaLoginConfig));
+        setMetaAppId(typeof d.metaAppId === "string" ? d.metaAppId : null);
+      })
       .catch(() => setMetaReady(false));
     setOrigin(window.location.origin.replace(/\/$/, ""));
   }, [open]);
@@ -310,14 +316,69 @@ export function ConnectWizard({ open, onClose, onConnected }: Props) {
                     account automatically.
                   </li>
                 </ol>
+                {!metaLoginConfig && (
+                  <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-100">
+                    <p className="font-medium text-amber-50">
+                      Required: enable Page permissions in Meta
+                    </p>
+                    <p className="mt-1 text-amber-100/90">
+                      Without a Facebook Login for Business Config ID, Facebook
+                      shows Invalid Scopes for pages_show_list and the Instagram
+                      publish permissions. Developers see this; regular users
+                      would skip those permissions and Pages would not connect.
+                    </p>
+                    <ol className="mt-2 list-decimal space-y-1 pl-4 text-amber-100/90">
+                      <li>
+                        Add product{" "}
+                        <a
+                          className="text-white underline"
+                          href={
+                            metaAppId
+                              ? `https://developers.facebook.com/apps/${metaAppId}/fb-login-business/configurations/`
+                              : "https://developers.facebook.com/apps/"
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Facebook Login for Business
+                        </a>
+                        .
+                      </li>
+                      <li>
+                        Create a <span className="text-white">User access token</span>{" "}
+                        configuration with pages_show_list, pages_read_engagement,
+                        pages_manage_posts, instagram_basic,
+                        instagram_content_publish, business_management.
+                      </li>
+                      <li>
+                        Set <code className="text-white">META_LOGIN_CONFIG_ID</code> in
+                        Vercel and Redeploy. Or add the same permissions under{" "}
+                        <a
+                          className="text-white underline"
+                          href={
+                            metaAppId
+                              ? `https://developers.facebook.com/apps/${metaAppId}/app-review/permissions/`
+                              : "https://developers.facebook.com/apps/"
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          App Review → Permissions and Features
+                        </a>
+                        .
+                      </li>
+                    </ol>
+                  </div>
+                )}
                 <p className="mt-3 text-xs text-amber-200/90">
-                  If Facebook says the redirect URI is not registered, add this
-                  exact URI under Facebook Login → Valid OAuth Redirect URIs:
+                  Facebook must have this Facebook Login callback URI (the same
+                  one used to sign in). Connect Pages no longer uses a second
+                  callback URL.
                 </p>
                 <code className="mt-1 block break-all rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs text-slate-200">
                   {origin
-                    ? `${origin}/api/auth/meta/callback`
-                    : "/api/auth/meta/callback"}
+                    ? `${origin}/api/auth/facebook/callback`
+                    : "/api/auth/facebook/callback"}
                 </code>
               </div>
               <div className="flex justify-between">

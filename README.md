@@ -41,6 +41,7 @@ except `DATABASE_URL` (which defaults to a local SQLite file).
 | `OPENAI_API_KEY` | Enables real AI generation. Omit to use the offline template engine. |
 | `OPENAI_TEXT_MODEL` / `OPENAI_IMAGE_MODEL` | Models used for text/image generation. |
 | `META_APP_ID` / `META_APP_SECRET` | Enables Facebook Login, Instagram Login, real Page/IG connection, and publishing. Omit for sandbox login + sandbox publishing. |
+| `META_LOGIN_CONFIG_ID` | Facebook Login for Business configuration ID used by Connect Pages. Avoids Invalid Scopes on consumer Facebook Login. |
 | `META_GRAPH_VERSION` | Meta Graph API version (default `v21.0`). |
 | `CANVA_CLIENT_ID` / `CANVA_CLIENT_SECRET` | Enables live Canva design creation + export. Omit for sandbox designs. |
 | `PRIVACY_CONTACT_EMAIL` | Optional email shown on `/privacy`. |
@@ -58,7 +59,7 @@ Then:
 1. **Add a Postgres database** — Vercel Storage → Postgres (or Neon) and set `DATABASE_URL`. The build runs `prisma migrate deploy` via `vercel-build`.
 2. **Enable uploads (optional)** — add a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`).
 3. **Scheduler** — `vercel.json` hits `/api/scheduler/tick` once a day (Hobby-plan limit). Upgrade Vercel or call that endpoint yourself for more frequent publishes.
-4. **Facebook / Instagram Login** — set `META_APP_ID`, `META_APP_SECRET`, and `APP_BASE_URL=https://your-app.vercel.app`, then Redeploy. Add `https://your-app.vercel.app/api/auth/facebook/callback` (and the Instagram + Meta callbacks) under Valid OAuth Redirect URIs. Without Meta keys, Continue with Facebook uses a sandbox session (no 500). Without `DATABASE_URL`, login is stored in a signed cookie so the button still works.
+4. **Facebook / Instagram Login** — set `META_APP_ID`, `META_APP_SECRET`, and `APP_BASE_URL=https://your-app.vercel.app`, then Redeploy. Add `https://your-app.vercel.app/api/auth/facebook/callback` (and the Instagram callback) under Valid OAuth Redirect URIs. For Connect Pages, add Facebook Login for Business, create a User access token configuration, and set `META_LOGIN_CONFIG_ID`. Without Meta keys, Continue with Facebook uses a sandbox session (no 500). Without `DATABASE_URL`, login is stored in a signed cookie so the button still works.
 
 CLI: `npx vercel --prod --name socialshit --yes` (or `npm run deploy`).
 
@@ -73,7 +74,6 @@ Until `META_APP_ID` and `META_APP_SECRET` are set, **Continue with Facebook / In
 ```
 {APP_BASE_URL}/api/auth/facebook/callback
 {APP_BASE_URL}/api/auth/instagram/callback
-{APP_BASE_URL}/api/auth/meta/callback
 ```
 
 Examples:
@@ -81,7 +81,6 @@ Examples:
 ```
 http://localhost:3000/api/auth/facebook/callback
 http://localhost:3000/api/auth/instagram/callback
-http://localhost:3000/api/auth/meta/callback
 ```
 
 4. For Instagram Login, add the **Instagram** product → **API setup with Instagram login**, and paste the Instagram callback. The Instagram account must be Professional (Business or Creator).
@@ -90,6 +89,7 @@ http://localhost:3000/api/auth/meta/callback
 ```
 META_APP_ID=...
 META_APP_SECRET=...
+META_LOGIN_CONFIG_ID=...
 APP_BASE_URL=http://localhost:3000
 ```
 
@@ -99,11 +99,12 @@ On Vercel, `APP_BASE_URL` must be your public HTTPS origin, for example `https:/
 7. Development-mode apps only allow **Admins / Developers / Testers**. Add yourself under **App roles**.
 8. Restart `npm run dev` (or wait for the Vercel redeploy). Reload `/login` — the sandbox note should disappear. Click **Continue with Facebook**.
 9. After you are signed in, go to **Accounts → Add integration → Connect with Meta** to attach Facebook Pages and linked Instagram Business accounts for publishing.
+10. **Invalid Scopes** on Connect Pages: consumer Facebook Login cannot request Page/IG publishing permissions until they are added. Add **Facebook Login for Business** → **Configurations** → User access token with the publishing permissions below, copy the Config ID into `META_LOGIN_CONFIG_ID`, Redeploy. Or add each permission under **App Review → Permissions and Features** (Development testers can use them without submitting review).
 
 Permissions this app requests:
 
-- Login: `public_profile`, `email` (Facebook) and `instagram_business_basic`, `instagram_business_content_publish` (Instagram).
-- Publishing (Connect with Meta): `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `business_management`.
+- Login: `public_profile` (Facebook) and `instagram_business_basic`, `instagram_business_content_publish` (Instagram).
+- Publishing (Connect with Meta): `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `business_management` — via Facebook Login for Business `config_id`, not as consumer Facebook Login scopes.
 
 Going **Live** later requires a **Privacy Policy URL** and Meta App Review for those publishing permissions. Testers can use the app while it stays in Development.
 

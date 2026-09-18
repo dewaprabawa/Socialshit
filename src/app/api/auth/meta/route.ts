@@ -23,8 +23,10 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
-  const redirectUri = `${oauthBaseUrl(req)}/api/auth/meta/callback`;
-  const state = signOAuthState("/accounts");
+  // Reuse the Facebook Login callback URI. Connect Pages was failing because
+  // /api/auth/meta/callback is a second URI Meta often does not have registered.
+  const redirectUri = `${oauthBaseUrl(req)}/api/auth/facebook/callback`;
+  const state = signOAuthState("/accounts", "pages");
   const res = NextResponse.redirect(oauthLoginUrl(redirectUri, state));
   applyOAuthStateCookie(res, state);
   return res;

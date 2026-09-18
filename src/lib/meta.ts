@@ -130,18 +130,46 @@ export async function publishPost(input: PublishInput): Promise<PublishResult> {
 
 // --- OAuth helpers (used when real Meta credentials are configured) ---
 
+export const PAGES_OAUTH_SCOPES = [
+  "pages_show_list",
+  "pages_read_engagement",
+  "pages_manage_posts",
+  "instagram_basic",
+  "instagram_content_publish",
+  "business_management",
+] as const;
+
+export function metaLoginConfigId(): string {
+  return (process.env.META_LOGIN_CONFIG_ID || "").trim();
+}
+
+export function metaAppId(): string {
+  return (process.env.META_APP_ID || "").trim();
+}
+
 function facebookDialogUrl(
   redirectUri: string,
   state: string,
-  scopes: string[]
+  options: { scopes?: string[]; configId?: string; rerequest?: boolean }
 ): string {
   const params = new URLSearchParams({
     client_id: process.env.META_APP_ID || "",
     redirect_uri: redirectUri,
     state,
-    scope: scopes.join(","),
     response_type: "code",
   });
+  const configId = (options.configId || "").trim();
+  // Facebook Login for Business: config_id replaces scope. Sending Page/IG
+  // scopes on consumer Facebook Login produces "Invalid Scopes" for developers.
+  if (configId) {
+    params.set("config_id", configId);
+    params.set("override_default_response_type", "true");
+  } else if (options.scopes?.length) {
+    params.set("scope", options.scopes.join(","));
+  }
+  if (options.rerequest) {
+    params.set("auth_type", "rerequest");
+  }
   return `https://www.facebook.com/${graphVersion()}/dialog/oauth?${params}`;
 }
 
@@ -149,7 +177,7 @@ function facebookDialogUrl(
 // Do not require email: new Meta apps often reject the email scope until it is
 // added under Use cases, which surfaces as a Facebook login error.
 export function facebookLoginUrl(redirectUri: string, state: string): string {
-  return facebookDialogUrl(redirectUri, state, ["public_profile"]);
+  return facebookDialogUrl(redirectUri, state, { scopes: ["public_profile"] });
 }
 
 // Instagram Login (Instagram API with Instagram Login).
@@ -168,15 +196,14 @@ export function instagramLoginUrl(redirectUri: string, state: string): string {
 }
 
 // Connect Facebook Pages + linked IG Business accounts for publishing.
+// Prefer Facebook Login for Business config_id (META_LOGIN_CONFIG_ID). Listing
+// these scopes on consumer Facebook Login is what triggers Invalid Scopes.
 export function oauthLoginUrl(redirectUri: string, state: string): string {
-  return facebookDialogUrl(redirectUri, state, [
-    "pages_show_list",
-    "pages_read_engagement",
-    "pages_manage_posts",
-    "instagram_basic",
-    "instagram_content_publish",
-    "business_management",
-  ]);
+  return facebookDialogUrl(redirectUri, state, {
+    scopes: [...PAGES_OAUTH_SCOPES],
+    configId: metaLoginConfigId(),
+    rerequest: true,
+  });
 }
 
 export interface SocialProfile {

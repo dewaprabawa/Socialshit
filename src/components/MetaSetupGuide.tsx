@@ -32,17 +32,34 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 
 export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const [origin, setOrigin] = useState("http://localhost:3000");
+  const [metaAppId, setMetaAppId] = useState<string | null>(null);
+  const [metaLoginConfig, setMetaLoginConfig] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin.replace(/\/$/, ""));
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((d) => {
+        setMetaAppId(typeof d.metaAppId === "string" ? d.metaAppId : null);
+        setMetaLoginConfig(Boolean(d.metaLoginConfig));
+      })
+      .catch(() => undefined);
   }, []);
 
   const facebookCallback = `${origin}/api/auth/facebook/callback`;
   const instagramCallback = `${origin}/api/auth/instagram/callback`;
-  const pagesCallback = `${origin}/api/auth/meta/callback`;
   const privacyUrl = `${origin}/privacy`;
   const deletionUrl = `${origin}/privacy#data-deletion`;
   const appDomain = origin.replace(/^https?:\/\//, "").split("/")[0];
+  const appBase = metaAppId
+    ? `https://developers.facebook.com/apps/${metaAppId}`
+    : "https://developers.facebook.com/apps";
+  const permissionsUrl = metaAppId
+    ? `${appBase}/app-review/permissions/`
+    : "https://developers.facebook.com/apps/";
+  const loginBusinessUrl = metaAppId
+    ? `${appBase}/fb-login-business/configurations/`
+    : "https://developers.facebook.com/docs/facebook-login/facebook-login-for-business/";
 
   return (
     <div className="card space-y-4 text-sm">
@@ -52,17 +69,39 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
         </h2>
         <p className="mt-1 text-slate-400">
           {metaReady
-            ? "App ID and secret are loaded. Add these exact redirect URIs in your Meta app, plus yourself as a Tester, then click Continue with Facebook."
+            ? "App ID and secret are loaded. Login uses public_profile only. Connecting Pages needs Facebook Login for Business (or those permissions added under App Review)."
             : "Do this once so Continue with Facebook and Continue with Instagram use your real Meta app instead of sandbox login."}
         </p>
       </div>
+
+      {metaReady && !metaLoginConfig && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-amber-100">
+          <p className="font-medium text-amber-50">
+            Invalid Scopes on Connect with Meta
+          </p>
+          <p className="mt-1 text-xs text-amber-100/90">
+            Facebook Login (sign-in) works. Connect Pages currently asks for Page
+            and Instagram publishing permissions that this app has not enabled.
+            Developers see “Konten ini tidak tersedia / Invalid Scopes”. Add{" "}
+            <span className="text-white">Facebook Login for Business</span>, then
+            paste the Config ID as <code className="text-white">META_LOGIN_CONFIG_ID</code>.
+          </p>
+        </div>
+      )}
+
+      {metaReady && metaLoginConfig && (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+          Facebook Login for Business Config ID is set. Connect Pages uses that
+          configuration instead of listing scopes on consumer Facebook Login.
+        </div>
+      )}
 
       <ol className="list-decimal space-y-3 pl-5 text-slate-300">
         <li>
           Open{" "}
           <a
             className="text-brand-400 hover:underline"
-            href="https://developers.facebook.com/apps/"
+            href={appBase}
             target="_blank"
             rel="noreferrer"
           >
@@ -83,21 +122,59 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
           Turn on <span className="text-white">Client OAuth login</span> and{" "}
           <span className="text-white">Web OAuth login</span>. Paste these{" "}
           <span className="text-white">Valid OAuth Redirect URIs</span> exactly (no trailing
-          slash):
+          slash). Login and Connect Pages share the Facebook callback:
         </li>
       </ol>
 
       <div className="space-y-2">
         <CopyRow label="App domains (Settings → Basic) — no https://" value={appDomain} />
         <CopyRow label="Site URL / Allowed domains for JavaScript SDK" value={origin} />
-        <CopyRow label="Facebook Login callback" value={facebookCallback} />
+        <CopyRow label="Facebook Login + Connect Pages callback" value={facebookCallback} />
         <CopyRow label="Instagram Login callback" value={instagramCallback} />
-        <CopyRow label="Connect Pages / IG Business (after you are signed in)" value={pagesCallback} />
         <CopyRow label="Privacy Policy URL (App settings → Basic)" value={privacyUrl} />
         <CopyRow label="User data deletion instructions URL" value={deletionUrl} />
       </div>
 
       <ol className="list-decimal space-y-3 pl-5 text-slate-300" start={4}>
+        <li>
+          <span className="text-white">Connect Pages — Facebook Login for Business.</span>{" "}
+          Open{" "}
+          <a
+            className="text-brand-400 hover:underline"
+            href={loginBusinessUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Facebook Login for Business → Configurations
+          </a>
+          . Create a configuration:
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-400">
+            <li>Access token type: <span className="text-white">User access token</span></li>
+            <li>
+              Permissions: <code className="text-slate-200">pages_show_list</code>,{" "}
+              <code className="text-slate-200">pages_read_engagement</code>,{" "}
+              <code className="text-slate-200">pages_manage_posts</code>,{" "}
+              <code className="text-slate-200">instagram_basic</code>,{" "}
+              <code className="text-slate-200">instagram_content_publish</code>,{" "}
+              <code className="text-slate-200">business_management</code>
+            </li>
+            <li>Copy the <span className="text-white">Config ID</span></li>
+          </ul>
+          <pre className="mt-2 overflow-x-auto rounded-lg border border-white/10 bg-slate-950 p-3 text-xs text-slate-200">{`META_LOGIN_CONFIG_ID=your_config_id`}</pre>
+          <p className="mt-2 text-xs text-slate-400">
+            Alternative if you stay on consumer Facebook Login:{" "}
+            <a
+              className="text-brand-400 hover:underline"
+              href={permissionsUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              App Review → Permissions and Features
+            </a>{" "}
+            and add the same permissions. In Development, Admins/Developers/Testers
+            can grant them without submitting App Review.
+          </p>
+        </li>
         <li>
           For Instagram Login, add the <span className="text-white">Instagram</span> product and
           open <span className="text-white">API setup with Instagram login</span>. Add the same
@@ -110,6 +187,7 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
           Secret</span>. Put them in the app environment (never in frontend code):
           <pre className="mt-2 overflow-x-auto rounded-lg border border-white/10 bg-slate-950 p-3 text-xs text-slate-200">{`META_APP_ID=your_app_id
 META_APP_SECRET=your_app_secret
+META_LOGIN_CONFIG_ID=your_config_id
 APP_BASE_URL=${origin}`}</pre>
         </li>
         <li>
