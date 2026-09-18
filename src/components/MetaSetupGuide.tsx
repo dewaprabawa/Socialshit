@@ -42,6 +42,7 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
   const pagesCallback = `${origin}/api/auth/meta/callback`;
   const privacyUrl = `${origin}/privacy`;
   const deletionUrl = `${origin}/privacy#data-deletion`;
+  const appDomain = origin.replace(/^https?:\/\//, "").split("/")[0];
 
   return (
     <div className="card space-y-4 text-sm">
@@ -87,6 +88,8 @@ export function MetaSetupGuide({ metaReady = false }: { metaReady?: boolean }) {
       </ol>
 
       <div className="space-y-2">
+        <CopyRow label="App domains (Settings → Basic) — no https://" value={appDomain} />
+        <CopyRow label="Site URL / Allowed domains for JavaScript SDK" value={origin} />
         <CopyRow label="Facebook Login callback" value={facebookCallback} />
         <CopyRow label="Instagram Login callback" value={instagramCallback} />
         <CopyRow label="Connect Pages / IG Business (after you are signed in)" value={pagesCallback} />
@@ -112,9 +115,12 @@ APP_BASE_URL=${origin}`}</pre>
         <li>
           Local: add those lines to <code className="text-slate-200">.env</code> and restart{" "}
           <code className="text-slate-200">npm run dev</code>. Vercel: Project → Settings →
-          Environment Variables, then Redeploy. Also add this site under{" "}
-          <span className="text-white">App domains</span> (for localhost use{" "}
-          <code className="text-slate-200">localhost</code>).
+          Environment Variables, then Redeploy. In{" "}
+          <span className="text-white">App settings → Basic → App domains</span> paste the App
+          domain above (for this production site that is{" "}
+          <code className="text-slate-200">socialshit-dev-1.vercel.app</code>, not{" "}
+          <code className="text-slate-200">https://</code>). Add a Website platform with the Site
+          URL. If Facebook says the URL cannot be loaded, the App domain is missing.
         </li>
         <li>
           While the Meta app is in <span className="text-white">Development</span> mode, only
